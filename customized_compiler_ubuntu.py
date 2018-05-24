@@ -2461,7 +2461,7 @@ def sheetPropElec(sheet, DATA_PROP, myXSDtree):
                 if len(axisDRP) > 0:
                     DRP.append({'AxisLabel': axisDRP})
                 # sort DRP
-                DRP = sortSequence(DRP, 'Distribution', DRP)
+                DRP = sortSequence(DRP, 'Distribution', myXSDtree)
                 acdD = addKV('Dielectric_Real_Permittivity', DRP, acdD) # add into acdD
             # Dielectric_Loss_Permittivity
             DLP = [] # a list for all Dielectric_Loss_Permittivity entries
