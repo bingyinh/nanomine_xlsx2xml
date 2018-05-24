@@ -2131,16 +2131,13 @@ def sheetPropVisc(sheet, DATA_PROP, myXSDtree):
             temP = addKVU('temperature', myRow[1], myRow[2], myRow[3], myRow[4], myRow[5], '', myRow[6], temP)
             if len(temP) > 0:
                 DMA_Test.append(temP)
-        # DynamicProperties/DMA_mode/.../condition/StrainAmplitude
-        if match(sheet.cell_value(row, 0), 'Strain rate'):
+        # DynamicProperties/DMA_mode/.../condition/strainAmplitude
+        if match(sheet.cell_value(row, 0), 'Strain amplitude'):
             strR = collections.OrderedDict()
             myRow = sheet.row_values(row) # save the list of row_values
             while len(myRow) < 7:
                 myRow.append(unicode('')) # prevent IndexError
-            if match(prevDMA, 'Frequency sweep'):
-                strR = addKVU('strainRate', myRow[1], myRow[2], myRow[3], myRow[4], myRow[5], '', myRow[6], strR)
-            elif match(prevDMA, 'Temperature sweep'):
-                strR = addKVU('StrainAmplitude', myRow[1], myRow[2], myRow[3], myRow[4], myRow[5], '', myRow[6], strR)
+            strR = addKVU('strainAmplitude', myRow[1], myRow[2], myRow[3], myRow[4], myRow[5], '', myRow[6], strR)
             if len(strR) > 0:
                 DMA_Test.append(strR)
         # DynamicProperties/DMA_mode/.../condition/frequency
@@ -2455,17 +2452,17 @@ def sheetPropElec(sheet, DATA_PROP, myXSDtree):
             acdD = collections.OrderedDict() # a dict for all AC_DielectricDispersion entries
             # Description
             acdD = addKV('Description', sheet.cell_value(row, 1), acdD)
-            # AC_Dielectric_Constant
-            ADC = [] # a list for all AC_Dielectric_Constant entries
-            dataADC = read_excel_profile(sheet.cell_value(row, 2)) # read excel
-            axisADC = axisInfo(dataADC)
-            if len(dataADC) > 0:
-                ADC.append({'data': dataADC})
-                if len(axisADC) > 0:
-                    ADC.append({'AxisLabel': axisADC})
-                # sort ADC
-                ADC = sortSequence(ADC, 'Distribution', myXSDtree)
-                acdD = addKV('AC_Dielectric_Constant', ADC, acdD) # add into acdD
+            # Dielectric_Real_Permittivity
+            DRP = [] # a list for all Dielectric_Real_Permittivity entries
+            dataDRP = read_excel_profile(sheet.cell_value(row, 2)) # read excel
+            axisDRP = axisInfo(dataADC)
+            if len(dataDRP) > 0:
+                DRP.append({'data': dataDRP})
+                if len(axisDRP) > 0:
+                    DRP.append({'AxisLabel': axisDRP})
+                # sort DRP
+                DRP = sortSequence(DRP, 'Distribution', DRP)
+                acdD = addKV('Dielectric_Real_Permittivity', DRP, acdD) # add into acdD
             # Dielectric_Loss_Permittivity
             DLP = [] # a list for all Dielectric_Loss_Permittivity entries
             dataDLP = read_excel_profile(sheet.cell_value(row, 3)) # read excel
