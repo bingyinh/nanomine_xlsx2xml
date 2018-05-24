@@ -2455,7 +2455,7 @@ def sheetPropElec(sheet, DATA_PROP, myXSDtree):
             # Dielectric_Real_Permittivity
             DRP = [] # a list for all Dielectric_Real_Permittivity entries
             dataDRP = read_excel_profile(sheet.cell_value(row, 2)) # read excel
-            axisDRP = axisInfo(dataADC)
+            axisDRP = axisInfo(dataDRP)
             if len(dataDRP) > 0:
                 DRP.append({'data': dataDRP})
                 if len(axisDRP) > 0:
