@@ -45,7 +45,7 @@ def verifyID(ID_raw):
                 message += '[SID Error] Sample ID format error: SID must start with "S". Current upload starts with "%s". Example: "S7".\n' % (SID[0])
             # SID length
             if len(SID) < 2:
-                message += '[PID Error] Sample ID format error: SID must have at least a length of 2. Current upload has a length of "%s". Example: "S7".\n' % (len(SID))
+                message += '[SID Error] Sample ID format error: SID must have at least a length of 2. Current upload has a length of "%s". Example: "S7".\n' % (len(SID))
             # SID ends with non-digits
             elif not SID[1:].isdigit():
                 message += '[SID Error] Sample ID format error: SID must end with numbers. Current upload ends with "%s". Example: "S7".\n' % (SID[1:])
