@@ -27,7 +27,7 @@ def verifyID(ID_raw):
         if PID[0].isalpha():
             # PID starts with the wrong alphabet
             if PID[0] not in ['L','E']:
-                message += '[PID Error] Sample ID format error: PID must start with "L" (for literature data) or "E" (for experimental data). Current upload starts with "%s". Example: "L101".\n' % (PID[0])
+                message += '[PID Error] Sample ID format error: PID must start with "L" (for literature data) or "E" (for experimental data) case-sensitive. Current upload starts with "%s". Example: "L101".\n' % (PID[0])
             # PID length
             if len(PID) < 4:
                 message += '[PID Error] Sample ID format error: PID must have at least a length of 4. Current upload has a length of "%s". Example: "L101".\n' % (len(PID))
@@ -41,8 +41,8 @@ def verifyID(ID_raw):
         SID = ID_seg[1]
         if SID[0].isalpha():
             # SID starts with the wrong alphabet
-            if SID[0].lower() != 's':
-                message += '[SID Error] Sample ID format error: SID must start with "S". Current upload starts with "%s". Example: "S7".\n' % (SID[0])
+            if SID[0] != 'S':
+                message += '[SID Error] Sample ID format error: SID must start with "S" case-sensitive. Current upload starts with "%s". Example: "S7".\n' % (SID[0])
             # SID length
             if len(SID) < 2:
                 message += '[SID Error] Sample ID format error: SID must have at least a length of 2. Current upload has a length of "%s". Example: "S7".\n' % (len(SID))
