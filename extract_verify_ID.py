@@ -26,7 +26,7 @@ def verifyID(ID_raw):
         PID = ID_seg[0]
         if PID[0].isalpha():
             # PID starts with the wrong alphabet
-            if PID[0].lower() not in ['l','e']:
+            if PID[0] not in ['L','E']:
                 message += '[PID Error] Sample ID format error: PID must start with "L" (for literature data) or "E" (for experimental data). Current upload starts with "%s". Example: "L101".\n' % (PID[0])
             # PID length
             if len(PID) < 4:
