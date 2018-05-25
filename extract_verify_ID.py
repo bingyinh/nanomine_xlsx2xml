@@ -1,29 +1,8 @@
 ## Excel worksheet ID extraction script
 ## By Bingyin Hu 05/25/2018
 
-# -------------------------------------------- file os and other general lib
-import glob, os                           # Python standard library
-import sys                                # Python standard library
-import copy                               # Python standard library
-from time import gmtime, strftime         # Python standard library
-
-# -------------------------------------------- convert .XLSX to .XML files
 import xlrd
-import dicttoxml
-import uuid
-import codecs
-
-# -------------------------------------------- XML Schemas
-from xml.dom.minidom import parseString   # Python standard library
-import collections                        # Python standard library
-import xml.etree.ElementTree as ET
-
-# -------------------------------------------- DOI information retriever
-from doiretriever import mainDOI          # extract publication info by DOI
-
-# -------------------------------------------- XML-XSD validation tool
-from xml_update_validator import runValidation
-
+import sys
 
 # a helper method to find a blurry match regardless of # signs between two
 # strings, testant is the standard expression
@@ -39,9 +18,9 @@ def verifyID(ID_raw):
     message = '' # init
     ID_seg = ID_raw.split('_') # a standard ID format PID_SID_AuthorLastName_PubYear
     if len(ID_seg) > 4:
-        message += '[Sample ID Error] Sample ID has extra parts, should be of format "L101_S1_LastName_2018". Current upload is "%s".\n' % (ID_raw)
+        message += '[Sample ID Error] Sample ID format error: Sample ID has extra parts, should be of format "L101_S1_LastName_2018". Current upload is "%s".\n' % (ID_raw)
     elif len(ID_seg) < 4:
-        message += '[Sample ID Error] Sample ID has missing parts, should be of format "L101_S1_LastName_2018". Current upload is "%s".\n' % (ID_raw)
+        message += '[Sample ID Error] Sample ID format error: Sample ID has missing parts, should be of format "L101_S1_LastName_2018". Current upload is "%s".\n' % (ID_raw)
     else:
         # PID
         PID = ID_seg[0]
@@ -104,15 +83,18 @@ def extractID(xlsxName):
     # otherwise, find and save the ID in ./ID.txt
     for row in xrange(sheet_sample.nrows):
         # ID
-        if match(sheet.row_values(row)[0], 'Sample ID'):
-            ID_raw = str(sheet.row_values(row)[1])
+        if match(sheet_sample.row_values(row)[0], 'Sample ID'):
+            ID_raw = str(sheet_sample.row_values(row)[1])
             # if no ID is entered in the cell
-            if len(ID_raw).strip() == 0:
+            if len(ID_raw.strip()) == 0:
                 message += '[Excel Error] Excel template value error: Sample ID is not entered in the uploaded Excel template.\n'
             # else verify the entered ID
             else:
                 message += verifyID(ID_raw)
-    # write the message in ./ID.txt    
+    # if no error detected
+    if message == '':
+        message = ID_raw
+    # write the message in ./ID.txt
     with open('./ID.txt', 'w') as fid:
         fid.write(message)
     return
