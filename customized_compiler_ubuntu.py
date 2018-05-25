@@ -458,9 +458,9 @@ def sheetSampleInfo(sheet, DATA, myXSDtree):
     #with open('/home/NANOMINE/ONR/Converter_web/record/upload_history', 'a+') as _f:
     with open('./upload_history.txt', 'a+') as _f:
         _f.write(CurrentTime + '\t' + str(ID) + '\t' + '(' + str(UploaderName) +  ')' + '\t' + str(UploaderEmail) + '\n')
-    #with open('./data/ID.txt', 'w') as _ff:
-    with open('./ID.txt', 'w') as _ff:
-        _ff.write(ID)
+    # #with open('./data/ID.txt', 'w') as _ff:
+    # with open('./ID.txt', 'w') as _ff:
+    #     _ff.write(ID)
     # write ID into DATA
     DATA.append({'ID': ID})
     # sort CommonFields, Journal, and LabGenerated
