@@ -39,18 +39,48 @@ def verifyID(ID_raw):
     message = '' # init
     ID_seg = ID_raw.split('_') # a standard ID format PID_SID_AuthorLastName_PubYear
     if len(ID_seg) > 4:
-        message = '[Error02] Sample ID has extra parts, should be of format "L101_S1_LastName_2018". Current upload is "%s".' % (ID_raw)
+        message += '[Sample ID Error] Sample ID has extra parts, should be of format "L101_S1_LastName_2018". Current upload is "%s".\n' % (ID_raw)
     elif len(ID_seg) < 4:
-        message = '[Error03] Sample ID has missing parts, should be of format "L101_S1_LastName_2018". Current upload is "%s".' % (ID_raw)
+        message += '[Sample ID Error] Sample ID has missing parts, should be of format "L101_S1_LastName_2018". Current upload is "%s".\n' % (ID_raw)
     else:
+        # PID
         PID = ID_seg[0]
         if PID[0].isalpha():
+            # PID starts with the wrong alphabet
             if PID[0].lower() not in ['l','e']:
-                message = '[Error04] Sample ID format error: PID must start with "L" (for literature data) or "E" (for experimental data). Current upload starts with "%s". Example: "L101".\n' % (PID[0])
-            
-
-
-
+                message += '[PID Error] Sample ID format error: PID must start with "L" (for literature data) or "E" (for experimental data). Current upload starts with "%s". Example: "L101".\n' % (PID[0])
+            # PID length
+            if len(PID) < 4:
+                message += '[PID Error] Sample ID format error: PID must have at least a length of 4. Current upload has a length of "%s". Example: "L101".\n' % (len(PID))
+            # PID ends with non-digits
+            elif not PID[1:].isdigit():
+                message += '[PID Error] Sample ID format error: PID must end with numbers. Current upload ends with "%s". Example: "L101".\n' % (PID[1:])
+        else:
+            # PID starts with non-alphabet
+            message += '[PID Error] Sample ID format error: PID must start with "L" (for literature data) or "E" (for experimental data). Current upload is missing the alphabet. Example: "L101".\n'
+        # SID
+        SID = ID_seg[1]
+        if SID[0].isalpha():
+            # SID starts with the wrong alphabet
+            if SID[0].lower() != 's':
+                message += '[SID Error] Sample ID format error: SID must start with "S". Current upload starts with "%s". Example: "S7".\n' % (SID[0])
+            # SID length
+            if len(SID) < 2:
+                message += '[PID Error] Sample ID format error: SID must have at least a length of 2. Current upload has a length of "%s". Example: "S7".\n' % (len(SID))
+            # SID ends with non-digits
+            elif not SID[1:].isdigit():
+                message += '[SID Error] Sample ID format error: SID must end with numbers. Current upload ends with "%s". Example: "S7".\n' % (SID[1:])
+        else:
+            # SID starts with non-alphabet
+            message += '[SID Error] Sample ID format error: SID must start with "S". Current upload is missing the alphabet. Example: "S7".\n'
+        # AuthorLastName
+        ALN = ID_seg[2]
+        # PubYear
+        PubYear = ID_seg[3]
+        if not PubYear.isdigit():
+            message += '[PubYear Error] Sample ID format error: Publication year must be a year. Current upload is "%s". Example: "2018".\n' % (PubYear)
+    return message
+        
 # the method to extract ID
 def extractID(xlsxName):
     # open xlsx
@@ -67,7 +97,7 @@ def extractID(xlsxName):
     # if the sheet with ID is not found, write error message in ./ID.txt
     message = ''
     if sheet_sample == '':
-        message = '[Error00] Sample_Info sheet not found'
+        message += '[Excel Error] Excel template format error: Sample_Info sheet not found.\n'
         with open('./ID.txt', 'w') as fid:
             fid.write(message)
         return
@@ -78,14 +108,14 @@ def extractID(xlsxName):
             ID_raw = str(sheet.row_values(row)[1])
             # if no ID is entered in the cell
             if len(ID_raw).strip() == 0:
-                message = '[Error01] Sample ID is not entered in the uploaded Excel template'
+                message += '[Excel Error] Excel template value error: Sample ID is not entered in the uploaded Excel template.\n'
             # else verify the entered ID
             else:
-                message = verifyID(ID_raw)
+                message += verifyID(ID_raw)
     # write the message in ./ID.txt    
     with open('./ID.txt', 'w') as fid:
         fid.write(message)
     return
  
 xlsxName = './'+sys.argv[1] # sys.argv[1] command line action
-extract(xlsxName)
+extractID(xlsxName)
