@@ -376,7 +376,7 @@ def sheetSampleInfo(sheet, DATA, myXSDtree):
     for row in xrange(sheet.nrows):
         # ID
         if match(sheet.row_values(row)[0], 'Sample ID'):
-            _ID = sheet.row_values(row)[1]
+            _ID = str(sheet.row_values(row)[1])
             print _ID
             if len(_ID) > 0:
                 ID = _ID
