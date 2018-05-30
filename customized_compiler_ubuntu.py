@@ -3091,8 +3091,10 @@ diffusionData = collections.OrderedDict({'item':DATA})
 diffusionDataxml = dicttoxml.dicttoxml(diffusionData,custom_root='PolymerNanocomposite',attr_type=False)
 # need to remove all <item> and </item> and <item > in the xml
 diffusionDataxml = diffusionDataxml.replace('<item>', '').replace('</item>', '').replace('<item >', '')
-# write information to interdiffusion.xml
-filename = str(str(ID)+'.xml')
+# make directory for xml output
+os.mkdir('./xml')
+# write information to ./xml/ID.xml
+filename = './xml/' + str(ID) + '.xml'
 with codecs.open(filename, 'w', "utf-8") as _f:
     _f.write("%s\n" % (parseString(diffusionDataxml).toprettyxml())[23:])
 
