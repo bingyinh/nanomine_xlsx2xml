@@ -2936,7 +2936,7 @@ def sheetMicrostructure(sheet, DATA, myXSDtree):
     wdir_file = './workingdir.str'
     with open(wdir_file) as _wdf:
         wdir_str = _wdf.read()
-    num_upload = int(wdir_str.split('\\')[-1].split('_')[-1])
+    pidsid = wdir_str.split('/')[-3] + '/' + wdir_str.split('/')[-2]
     
     headers = {'Imagefile': 'ImageFile',
                'Sample experimental info': 'Experimental_Sample_Info'}
@@ -2969,7 +2969,7 @@ def sheetMicrostructure(sheet, DATA, myXSDtree):
         if match(sheet.cell_value(row, 0), 'Microstructure filename'): #(!!!!!!!!!!!!!!!!!)
             imageDir = ''
             if len(str(sheet.cell_value(row, 1)).strip()) > 0:
-                imageDir = 'http://nanomine.northwestern.edu/nanomine/XMLCONV/media/'+ str(num_upload)+ '/' + str(sheet.cell_value(row, 1)).strip()
+                imageDir = '/XMLCONV/media/'+ pidsid + '/' + str(sheet.cell_value(row, 1)).strip()
             temp = insert('File', imageDir, temp)
         # ImageFile/Description
         if match(sheet.cell_value(row, 0), 'Description'):
