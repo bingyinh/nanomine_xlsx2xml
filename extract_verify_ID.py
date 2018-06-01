@@ -98,7 +98,7 @@ def extractID(xlsxName):
             fid.write(ID_raw)
     else:
         # write the message in ./error_message.txt
-        with open('./error_message.txt', 'w') as fid:
+        with open('./error_message.txt', 'a') as fid:
             fid.write(message)
     return
  
