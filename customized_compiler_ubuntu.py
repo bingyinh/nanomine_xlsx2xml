@@ -42,9 +42,15 @@ propSet = {"mechanical", "viscoelastic", "electrical", "thermal", "volumetric",
 def read_excel_profile(filename):
     if len(str(filename).strip()) == 0:
        return ''
-   # append file extension if user does not put one
+    # append file extension if user does not put one
     if len(filename.strip('.xlsx')) == len(filename):
         filename += '.xlsx'
+    # confirm whether the file exists
+    if not os.path.exists('./' + filename):
+        # write the message in ./error_message.txt
+        with open('./error_message.txt', 'a') as fid:
+            fid.write('[File Error] Missing file! Please include "%s" in your uploads.' % (filename))
+            return ''
     # open and read data
     data_file = xlrd.open_workbook('./'+filename)
     data_names = data_file.sheet_names()
