@@ -93,10 +93,13 @@ def extractID(xlsxName):
                 message += verifyID(ID_raw)
     # if no error detected
     if message == '':
-        message = ID_raw
-    # write the message in ./ID.txt
-    with open('./ID.txt', 'w') as fid:
-        fid.write(message)
+        # write the ID in ./ID.txt
+        with open('./ID.txt', 'w') as fid:
+            fid.write(ID_raw)
+    else:
+        # write the message in ./error_message.txt
+        with open('./error_message.txt', 'w') as fid:
+            fid.write(message)
     return
  
 xlsxName = './'+sys.argv[1] # sys.argv[1] command line action
