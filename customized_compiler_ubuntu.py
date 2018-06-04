@@ -621,14 +621,14 @@ def sheetMatType(sheet, DATA, myXSDtree):
         if match(sheet.cell_value(row, 0), 'Matrix Component Composition weight fraction'):
             mcc = collections.OrderedDict()
             myRow = sheet.row_values(row) # save the list of row_values
-            if type(myRow[2]) == float:
+            if type(myRow[2]) == float or len(myRow[2]) > 0:
                 mcc['mass'] = myRow[2]
             if len(mcc) > 0:
                 MatrixComponent.append({'MatrixComponentComposition':mcc})
         if match(sheet.cell_value(row, 0), 'Matrix Component Composition volume fraction'):
             vcc = collections.OrderedDict()
             myRow = sheet.row_values(row) # save the list of row_values
-            if type(myRow[2]) == float:
+            if type(myRow[2]) == float or len(myRow[2]) > 0:
                 vcc['volume'] = myRow[2]
             if len(vcc) > 0:
                 MatrixComponent.append({'MatrixComponentComposition':vcc})
@@ -698,7 +698,7 @@ def sheetMatType(sheet, DATA, myXSDtree):
         if match(sheet.cell_value(row, 0), 'Filler Component Composition weight fraction'):
             mcc = collections.OrderedDict()
             myRow = sheet.row_values(row) # save the list of row_values
-            if type(myRow[2]) == float:
+            if type(myRow[2]) == float or len(myRow[2]) > 0:
                 mcc['mass'] = myRow[2]
             if len(mcc) > 0:
                 FillerComponent.append({'FillerComponentComposition':mcc})
@@ -706,13 +706,13 @@ def sheetMatType(sheet, DATA, myXSDtree):
         if match(sheet.cell_value(row, 0), 'Filler Component Composition volume fraction'):
             vcc = collections.OrderedDict()
             myRow = sheet.row_values(row) # save the list of row_values
-            if type(myRow[2]) == float:
+            if type(myRow[2]) == float or len(myRow[2]) > 0:
                 vcc['volume'] = myRow[2]
             if len(vcc) > 0:
                 FillerComponent.append({'FillerComponentComposition':vcc})
             # FillerComposition/mass(volume)
         if match(sheet.cell_value(row, 0), 'Fraction'):
-            if type(sheet.cell_value(row, 2)) == float:
+            if type(sheet.cell_value(row, 2)) == float or len(sheet.cell_value(row, 2)) > 0:
                 if match(sheet.cell_value(row, 1), 'mass'):
                     temp.append({'FillerComposition':{'Fraction':{'mass':sheet.cell_value(row, 2)}}})
                 elif match(sheet.cell_value(row, 1), 'volume'):
@@ -763,7 +763,7 @@ def sheetMatType(sheet, DATA, myXSDtree):
             myRow = sheet.row_values(row) # save the list of row_values
             if len(str(myRow[1]).strip()) > 0:
                 mcc['Constituent'] = myRow[1]
-            if type(myRow[2]) == float:
+            if type(myRow[2]) == float or len(myRow[2]) > 0:
                 mcc['Fraction'] = {'mass': myRow[2]}
             if len(mcc) > 0:
                 PST.append({'PST_Composition':mcc})
@@ -772,7 +772,7 @@ def sheetMatType(sheet, DATA, myXSDtree):
             myRow = sheet.row_values(row) # save the list of row_values
             if len(str(myRow[1]).strip()) > 0:
                 vcc['Constituent'] = myRow[1]
-            if type(myRow[2]) == float:
+            if type(myRow[2]) == float or len(myRow[2]) > 0:
                 vcc['Fraction'] = {'volume': myRow[2]}
             if len(mcc) > 0:
                 PST.append({'PST_Composition':vcc})
@@ -910,7 +910,7 @@ def sheetProcTypeHelper(sheet, row, temp_list, stop_sign, myXSDtree):
         # Amount
         if match(sheet.cell_value(irow, 0), 'Additive - amount'):
             amount = collections.OrderedDict()
-            if type(sheet.row_values(irow)[1]) == float:
+            if type(sheet.row_values(irow)[1]) == float or len(sheet.row_values(irow)[1]) > 0:
                 amount = addKVU('Amount', '', sheet.row_values(irow)[1],
                                 sheet.row_values(irow)[2], '', '', '', '', amount)
             else:
@@ -926,7 +926,7 @@ def sheetProcTypeHelper(sheet, row, temp_list, stop_sign, myXSDtree):
         # Temperature
         if match(sheet.cell_value(irow, 0), 'Cooling - temperature'):
             temperature = collections.OrderedDict()
-            if type(sheet.row_values(irow)[1]) == float:
+            if type(sheet.row_values(irow)[1]) == float or len(sheet.row_values(irow)[1]) > 0:
                 temperature = addKVU('Temperature', '', sheet.row_values(irow)[1],
                                      sheet.row_values(irow)[2], '', '', '', '', temperature)
             else:
@@ -937,7 +937,7 @@ def sheetProcTypeHelper(sheet, row, temp_list, stop_sign, myXSDtree):
         # Time
         if match(sheet.cell_value(irow, 0), 'Cooling - time'):
             time = collections.OrderedDict()
-            if type(sheet.row_values(irow)[1]) == float:
+            if type(sheet.row_values(irow)[1]) == float or len(sheet.row_values(irow)[1]) > 0:
                 time = addKVU('Time', '', sheet.row_values(irow)[1],
                               sheet.row_values(irow)[2], '', '', '', '', time)
             else:
@@ -948,7 +948,7 @@ def sheetProcTypeHelper(sheet, row, temp_list, stop_sign, myXSDtree):
         # Pressure
         if match(sheet.cell_value(irow, 0), 'Cooling - pressure'):
             pressure = collections.OrderedDict()
-            if type(sheet.row_values(irow)[1]) == float:
+            if type(sheet.row_values(irow)[1]) == float or len(sheet.row_values(irow)[1]) > 0:
                 pressure = addKVU('Pressure', '', sheet.row_values(irow)[1],
                                   sheet.row_values(irow)[2], '', '', '', '', pressure)
             else:
@@ -996,7 +996,7 @@ def sheetProcTypeHelper(sheet, row, temp_list, stop_sign, myXSDtree):
         # RPM
         if match(sheet.cell_value(irow, 0), 'Mixing - RPM'):
             rpm = collections.OrderedDict()
-            if type(sheet.row_values(irow)[1]) == float:
+            if type(sheet.row_values(irow)[1]) == float or len(sheet.row_values(irow)[1]) > 0:
                 rpm = addKVU('RPM', '', sheet.row_values(irow)[1],
                              sheet.row_values(irow)[2], '', '', '', '', rpm)
             else:
@@ -1007,7 +1007,7 @@ def sheetProcTypeHelper(sheet, row, temp_list, stop_sign, myXSDtree):
         # Time
         if match(sheet.cell_value(irow, 0), 'Mixing - time'):
             time = collections.OrderedDict()
-            if type(sheet.row_values(irow)[1]) == float:
+            if type(sheet.row_values(irow)[1]) == float or len(sheet.row_values(irow)[1]) > 0:
                 time = addKVU('Time', '', sheet.row_values(irow)[1],
                               sheet.row_values(irow)[2], '', '', '', '', time)
             else:
@@ -1018,7 +1018,7 @@ def sheetProcTypeHelper(sheet, row, temp_list, stop_sign, myXSDtree):
         # Temperature
         if match(sheet.cell_value(irow, 0), 'Mixing - temperature'):
             temperature = collections.OrderedDict()
-            if type(sheet.row_values(irow)[1]) == float:
+            if type(sheet.row_values(irow)[1]) == float or len(sheet.row_values(irow)[1]) > 0:
                 temperature = addKVU('Temperature', '', sheet.row_values(irow)[1],
                                      sheet.row_values(irow)[2], '', '', '', '', temperature)
             else:
@@ -1042,7 +1042,7 @@ def sheetProcTypeHelper(sheet, row, temp_list, stop_sign, myXSDtree):
         # Single(Twin)ScrewExtrusion/ResidenceTime
         if match(sheet.cell_value(irow, 0), 'Residence time'):
             time = collections.OrderedDict()
-            if type(sheet.row_values(irow)[1]) == float:
+            if type(sheet.row_values(irow)[1]) == float or len(sheet.row_values(irow)[1]) > 0:
                 time = addKVU('ResidenceTime', '', sheet.row_values(irow)[1],
                               sheet.row_values(irow)[2], '', '', '', '', time)
             else:
@@ -1053,7 +1053,7 @@ def sheetProcTypeHelper(sheet, row, temp_list, stop_sign, myXSDtree):
         # Single(Twin)ScrewExtrusion/ExtrusionTemperature
         if match(sheet.cell_value(irow, 0), 'Extrusion temperature'):
             temperature = collections.OrderedDict()
-            if type(sheet.row_values(irow)[1]) == float:
+            if type(sheet.row_values(irow)[1]) == float or len(sheet.row_values(irow)[1]) > 0:
                 temperature = addKVU('ExtrusionTemperature', '', sheet.row_values(irow)[1],
                                      sheet.row_values(irow)[2], '', '', '', '', temperature)
             else:
@@ -1064,7 +1064,7 @@ def sheetProcTypeHelper(sheet, row, temp_list, stop_sign, myXSDtree):
         # Single(Twin)ScrewExtrusion/ScrewDiameter
         if match(sheet.cell_value(irow, 0), 'Screw diameter'):
             diameter = collections.OrderedDict()
-            if type(sheet.row_values(irow)[1]) == float:
+            if type(sheet.row_values(irow)[1]) == float or len(sheet.row_values(irow)[1]) > 0:
                 diameter = addKVU('ScrewDiameter', '', sheet.row_values(irow)[1],
                                   sheet.row_values(irow)[2], '', '', '', '', diameter)
             else:
@@ -1078,7 +1078,7 @@ def sheetProcTypeHelper(sheet, row, temp_list, stop_sign, myXSDtree):
         # Single(Twin)ScrewExtrusion/FlightWidth
         if match(sheet.cell_value(irow, 0), 'Flight width'):
             width = collections.OrderedDict()
-            if type(sheet.row_values(irow)[1]) == float:
+            if type(sheet.row_values(irow)[1]) == float or len(sheet.row_values(irow)[1]) > 0:
                 width = addKVU('FlightWidth', '', sheet.row_values(irow)[1],
                                sheet.row_values(irow)[2], '', '', '', '', width)
             else:
@@ -1093,7 +1093,7 @@ def sheetProcTypeHelper(sheet, row, temp_list, stop_sign, myXSDtree):
             # lengthOfHeatingZone
         if match(sheet.cell_value(irow, 0), 'Heating zone - length'):
             length = collections.OrderedDict()
-            if type(sheet.row_values(irow)[1]) == float:
+            if type(sheet.row_values(irow)[1]) == float or len(sheet.row_values(irow)[1]) > 0:
                 length = addKVU('lengthOfHeatingZone', '', sheet.row_values(irow)[1],
                                 sheet.row_values(irow)[2], '', '', '', '', length)
             else:
@@ -1104,7 +1104,7 @@ def sheetProcTypeHelper(sheet, row, temp_list, stop_sign, myXSDtree):
             # barrelTemperature
         if match(sheet.cell_value(irow, 0), 'Heating zone - barrel temperature'):
             temperature = collections.OrderedDict()
-            if type(sheet.row_values(irow)[1]) == float:
+            if type(sheet.row_values(irow)[1]) == float or len(sheet.row_values(irow)[1]) > 0:
                 temperature = addKVU('barrelTemperature', '', sheet.row_values(irow)[1],
                                      sheet.row_values(irow)[2], '', '', '', '', temperature)
             else:
@@ -1115,7 +1115,7 @@ def sheetProcTypeHelper(sheet, row, temp_list, stop_sign, myXSDtree):
         # Single(Twin)ScrewExtrusion/DieDiameter
         if match(sheet.cell_value(irow, 0), 'Die diameter'):
             diameter = collections.OrderedDict()
-            if type(sheet.row_values(irow)[1]) == float:
+            if type(sheet.row_values(irow)[1]) == float or len(sheet.row_values(irow)[1]) > 0:
                 diameter = addKVU('DieDiameter', '', sheet.row_values(irow)[1],
                                   sheet.row_values(irow)[2], '', '', '', '', diameter)
             else:
@@ -1127,7 +1127,7 @@ def sheetProcTypeHelper(sheet, row, temp_list, stop_sign, myXSDtree):
             # MeltTemperature
         if match(sheet.cell_value(irow, 0), 'Output - Melt temperature'):
             melt = collections.OrderedDict()
-            if type(sheet.row_values(irow)[1]) == float:
+            if type(sheet.row_values(irow)[1]) == float or len(sheet.row_values(irow)[1]) > 0:
                 melt = addKVU('MeltTemperature', '', sheet.row_values(irow)[1],
                               sheet.row_values(irow)[2], '', '', '', '', melt)
             else:
@@ -1138,7 +1138,7 @@ def sheetProcTypeHelper(sheet, row, temp_list, stop_sign, myXSDtree):
             # PressureAtDie
         if match(sheet.cell_value(irow, 0), 'Output - Pressure at die'):
             pressure = collections.OrderedDict()
-            if type(sheet.row_values(irow)[1]) == float:
+            if type(sheet.row_values(irow)[1]) == float or len(sheet.row_values(irow)[1]) > 0:
                 pressure = addKVU('PressureAtDie', '', sheet.row_values(irow)[1],
                                   sheet.row_values(irow)[2], '', '', '', '', pressure)
             else:
@@ -1149,7 +1149,7 @@ def sheetProcTypeHelper(sheet, row, temp_list, stop_sign, myXSDtree):
             # Torque
         if match(sheet.cell_value(irow, 0), 'Output - Torque'):
             torque = collections.OrderedDict()
-            if type(sheet.row_values(irow)[1]) == float:
+            if type(sheet.row_values(irow)[1]) == float or len(sheet.row_values(irow)[1]) > 0:
                 torque = addKVU('Torque', '', sheet.row_values(irow)[1],
                                 sheet.row_values(irow)[2], '', '', '', '', torque)
             else:
@@ -1160,7 +1160,7 @@ def sheetProcTypeHelper(sheet, row, temp_list, stop_sign, myXSDtree):
             # Amperage
         if match(sheet.cell_value(irow, 0), 'Output - Amperage'):
             amperage = collections.OrderedDict()
-            if type(sheet.row_values(irow)[1]) == float:
+            if type(sheet.row_values(irow)[1]) == float or len(sheet.row_values(irow)[1]) > 0:
                 amperage = addKVU('Amperage', '', sheet.row_values(irow)[1],
                                   sheet.row_values(irow)[2], '', '', '', '', amperage)
             else:
@@ -1171,7 +1171,7 @@ def sheetProcTypeHelper(sheet, row, temp_list, stop_sign, myXSDtree):
             # Voltage
         if match(sheet.cell_value(irow, 0), 'Output - Voltage'):
             voltage = collections.OrderedDict()
-            if type(sheet.row_values(irow)[1]) == float:
+            if type(sheet.row_values(irow)[1]) == float or len(sheet.row_values(irow)[1]) > 0:
                 voltage = addKVU('Voltage', '', sheet.row_values(irow)[1],
                                  sheet.row_values(irow)[2], '', '', '', '', voltage)
             else:
@@ -1182,7 +1182,7 @@ def sheetProcTypeHelper(sheet, row, temp_list, stop_sign, myXSDtree):
             # Power
         if match(sheet.cell_value(irow, 0), 'Output - Power'):
             power = collections.OrderedDict()
-            if type(sheet.row_values(irow)[1]) == float:
+            if type(sheet.row_values(irow)[1]) == float or len(sheet.row_values(irow)[1]) > 0:
                 power = addKVU('Power', '', sheet.row_values(irow)[1],
                                sheet.row_values(irow)[2], '', '', '', '', power)
             else:
@@ -1193,7 +1193,7 @@ def sheetProcTypeHelper(sheet, row, temp_list, stop_sign, myXSDtree):
             # ThroughPut
         if match(sheet.cell_value(irow, 0), 'Output - Throughput'):
             throughput = collections.OrderedDict()
-            if type(sheet.row_values(irow)[1]) == float:
+            if type(sheet.row_values(irow)[1]) == float or len(sheet.row_values(irow)[1]) > 0:
                 throughput = addKVU('ThroughPut', '', sheet.row_values(irow)[1],
                                      sheet.row_values(irow)[2], '', '', '', '', throughput)
             else:
@@ -1204,7 +1204,7 @@ def sheetProcTypeHelper(sheet, row, temp_list, stop_sign, myXSDtree):
             # ResidenceTime
         if match(sheet.cell_value(irow, 0), 'Output - Residence time'):
             residence = collections.OrderedDict()
-            if type(sheet.row_values(irow)[1]) == float:
+            if type(sheet.row_values(irow)[1]) == float or len(sheet.row_values(irow)[1]) > 0:
                 residence = addKVU('ResidenceTime', '', sheet.row_values(irow)[1],
                                    sheet.row_values(irow)[2], '', '', '', '', residence)
             else:
@@ -1215,7 +1215,7 @@ def sheetProcTypeHelper(sheet, row, temp_list, stop_sign, myXSDtree):
         # SingleScrewExtrusion/InnerBarrelDiameter
         if match(sheet.cell_value(irow, 0), 'Inner barrel diameter'):
             diameter = collections.OrderedDict()
-            if type(sheet.row_values(irow)[1]) == float:
+            if type(sheet.row_values(irow)[1]) == float or len(sheet.row_values(irow)[1]) > 0:
                 diameter = addKVU('InnerBarrelDiameter', '', sheet.row_values(irow)[1],
                                   sheet.row_values(irow)[2], '', '', '', '', diameter)
             else:
@@ -1226,7 +1226,7 @@ def sheetProcTypeHelper(sheet, row, temp_list, stop_sign, myXSDtree):
         # SingleScrewExtrusion/ScrewLength
         if match(sheet.cell_value(irow, 0), 'Screw length'):
             length = collections.OrderedDict()
-            if type(sheet.row_values(irow)[1]) == float:
+            if type(sheet.row_values(irow)[1]) == float or len(sheet.row_values(irow)[1]) > 0:
                 length = addKVU('ScrewLength', '', sheet.row_values(irow)[1],
                                 sheet.row_values(irow)[2], '', '', '', '', length)
             else:
@@ -1237,7 +1237,7 @@ def sheetProcTypeHelper(sheet, row, temp_list, stop_sign, myXSDtree):
         # SingleScrewExtrusion/RadialFlightClearance
         if match(sheet.cell_value(irow, 0), 'Radial flight clearance'):
             clearance = collections.OrderedDict()
-            if type(sheet.row_values(irow)[1]) == float:
+            if type(sheet.row_values(irow)[1]) == float or len(sheet.row_values(irow)[1]) > 0:
                 clearance = addKVU('RadialFlightClearance', '', sheet.row_values(irow)[1],
                                    sheet.row_values(irow)[2], '', '', '', '', clearance)
             else:
@@ -1248,7 +1248,7 @@ def sheetProcTypeHelper(sheet, row, temp_list, stop_sign, myXSDtree):
         # SingleScrewExtrusion/ChannelDepth
         if match(sheet.cell_value(irow, 0), 'Channel depth'):
             depth = collections.OrderedDict()
-            if type(sheet.row_values(irow)[1]) == float:
+            if type(sheet.row_values(irow)[1]) == float or len(sheet.row_values(irow)[1]) > 0:
                 depth = addKVU('ChannelDepth', '', sheet.row_values(irow)[1],
                                sheet.row_values(irow)[2], '', '', '', '', depth)
             else:
@@ -1259,7 +1259,7 @@ def sheetProcTypeHelper(sheet, row, temp_list, stop_sign, myXSDtree):
         # SingleScrewExtrusion/ScrewLead
         if match(sheet.cell_value(irow, 0), 'Screw lead'):
             lead = collections.OrderedDict()
-            if type(sheet.row_values(irow)[1]) == float:
+            if type(sheet.row_values(irow)[1]) == float or len(sheet.row_values(irow)[1]) > 0:
                 lead = addKVU('ScrewLead', '', sheet.row_values(irow)[1],
                               sheet.row_values(irow)[2], '', '', '', '', lead)
             else:
@@ -1273,7 +1273,7 @@ def sheetProcTypeHelper(sheet, row, temp_list, stop_sign, myXSDtree):
         # SingleScrewExtrusion/ScrewChannelWidth
         if match(sheet.cell_value(irow, 0), 'Screw channel width'):
             width = collections.OrderedDict()
-            if type(sheet.row_values(irow)[1]) == float:
+            if type(sheet.row_values(irow)[1]) == float or len(sheet.row_values(irow)[1]) > 0:
                 width = addKVU('ScrewChannelWidth', '', sheet.row_values(irow)[1],
                                sheet.row_values(irow)[2], '', '', '', '', width)
             else:
@@ -1284,7 +1284,7 @@ def sheetProcTypeHelper(sheet, row, temp_list, stop_sign, myXSDtree):
         # Single(Twin)ScrewExtrusion/RotationSpeed
         if match(sheet.cell_value(irow, 0), 'Rotation speed'):
             speed = collections.OrderedDict()
-            if type(sheet.row_values(irow)[1]) == float:
+            if type(sheet.row_values(irow)[1]) == float or len(sheet.row_values(irow)[1]) > 0:
                 speed = addKVU('RotationSpeed', '', sheet.row_values(irow)[1],
                                sheet.row_values(irow)[2], '', '', '', '', speed)
             else:
@@ -1295,7 +1295,7 @@ def sheetProcTypeHelper(sheet, row, temp_list, stop_sign, myXSDtree):
         # SingleScrewExtrusion/BarrelTemperature (maybe redundant)
         if match(sheet.cell_value(irow, 0), 'Barrel Temperature'):
             temperature = collections.OrderedDict()
-            if type(sheet.row_values(irow)[1]) == float:
+            if type(sheet.row_values(irow)[1]) == float or len(sheet.row_values(irow)[1]) > 0:
                 temperature = addKVU('BarrelTemperature', '', sheet.row_values(irow)[1],
                                      sheet.row_values(irow)[2], '', '', '', '', temperature)
             else:
@@ -1309,7 +1309,7 @@ def sheetProcTypeHelper(sheet, row, temp_list, stop_sign, myXSDtree):
         # TwinScrewExtrusion/ScrewChannelDiameter
         if match(sheet.cell_value(irow, 0), 'Screw channel diameter'):
             diameter = collections.OrderedDict()
-            if type(sheet.row_values(irow)[1]) == float:
+            if type(sheet.row_values(irow)[1]) == float or len(sheet.row_values(irow)[1]) > 0:
                 diameter = addKVU('ScrewChannelDiameter', '', sheet.row_values(irow)[1],
                                   sheet.row_values(irow)[2], '', '', '', '', diameter)
             else:
@@ -1320,7 +1320,7 @@ def sheetProcTypeHelper(sheet, row, temp_list, stop_sign, myXSDtree):
         # TwinScrewExtrusion/FlightClearance
         if match(sheet.cell_value(irow, 0), 'Flight clearance'):
             clearance = collections.OrderedDict()
-            if type(sheet.row_values(irow)[1]) == float:
+            if type(sheet.row_values(irow)[1]) == float or len(sheet.row_values(irow)[1]) > 0:
                 clearance = addKVU('FlightClearance', '', sheet.row_values(irow)[1],
                                    sheet.row_values(irow)[2], '', '', '', '', clearance)
             else:
@@ -1336,7 +1336,7 @@ def sheetProcTypeHelper(sheet, row, temp_list, stop_sign, myXSDtree):
         # Temperature
         if match(sheet.cell_value(irow, 0), 'Heating - temperature'):
             temperature = collections.OrderedDict()
-            if type(sheet.row_values(irow)[1]) == float:
+            if type(sheet.row_values(irow)[1]) == float or len(sheet.row_values(irow)[1]) > 0:
                 temperature = addKVU('Temperature', '', sheet.row_values(irow)[1],
                                      sheet.row_values(irow)[2], '', '', '', '', temperature)
             else:
@@ -1347,7 +1347,7 @@ def sheetProcTypeHelper(sheet, row, temp_list, stop_sign, myXSDtree):
         # Time
         if match(sheet.cell_value(irow, 0), 'Heating - time'):
             time = collections.OrderedDict()
-            if type(sheet.row_values(irow)[1]) == float:
+            if type(sheet.row_values(irow)[1]) == float or len(sheet.row_values(irow)[1]) > 0:
                 time = addKVU('Time', '', sheet.row_values(irow)[1],
                               sheet.row_values(irow)[2], '', '', '', '', time)
             else:
@@ -1358,7 +1358,7 @@ def sheetProcTypeHelper(sheet, row, temp_list, stop_sign, myXSDtree):
         # Pressure
         if match(sheet.cell_value(irow, 0), 'Heating - pressure'):
             pressure = collections.OrderedDict()
-            if type(sheet.row_values(irow)[1]) == float:
+            if type(sheet.row_values(irow)[1]) == float or len(sheet.row_values(irow)[1]) > 0:
                 pressure = addKVU('Pressure', '', sheet.row_values(irow)[1],
                                   sheet.row_values(irow)[2], '', '', '', '', pressure)
             else:
@@ -1377,7 +1377,7 @@ def sheetProcTypeHelper(sheet, row, temp_list, stop_sign, myXSDtree):
         # Temperature
         if match(sheet.cell_value(irow, 0), 'Drying/Evaporation - temperature'):
             temperature = collections.OrderedDict()
-            if type(sheet.row_values(irow)[1]) == float:
+            if type(sheet.row_values(irow)[1]) == float or len(sheet.row_values(irow)[1]) > 0:
                 temperature = addKVU('Temperature', '', sheet.row_values(irow)[1],
                                      sheet.row_values(irow)[2], '', '', '', '', temperature)
             else:
@@ -1388,7 +1388,7 @@ def sheetProcTypeHelper(sheet, row, temp_list, stop_sign, myXSDtree):
         # Time
         if match(sheet.cell_value(irow, 0), 'Drying/Evaporation - time'):
             time = collections.OrderedDict()
-            if type(sheet.row_values(irow)[1]) == float:
+            if type(sheet.row_values(irow)[1]) == float or len(sheet.row_values(irow)[1]) > 0:
                 time = addKVU('Time', '', sheet.row_values(irow)[1],
                               sheet.row_values(irow)[2], '', '', '', '', time)
             else:
@@ -1399,7 +1399,7 @@ def sheetProcTypeHelper(sheet, row, temp_list, stop_sign, myXSDtree):
         # Pressure
         if match(sheet.cell_value(irow, 0), 'Drying/Evaporation - pressure'):
             pressure = collections.OrderedDict()
-            if type(sheet.row_values(irow)[1]) == float:
+            if type(sheet.row_values(irow)[1]) == float or len(sheet.row_values(irow)[1]) > 0:
                 pressure = addKVU('Pressure', '', sheet.row_values(irow)[1],
                                   sheet.row_values(irow)[2], '', '', '', '', pressure)
             else:
@@ -1426,7 +1426,7 @@ def sheetProcTypeHelper(sheet, row, temp_list, stop_sign, myXSDtree):
         # MoldingInfo/Temperature
         if match(sheet.cell_value(irow, 0), 'Molding - temperature'):
             temperature = collections.OrderedDict()
-            if type(sheet.row_values(irow)[1]) == float:
+            if type(sheet.row_values(irow)[1]) == float or len(sheet.row_values(irow)[1]) > 0:
                 temperature = addKVU('Temperature', '', sheet.row_values(irow)[1],
                                      sheet.row_values(irow)[2], '', '', '', '', temperature)
             else:
@@ -1437,7 +1437,7 @@ def sheetProcTypeHelper(sheet, row, temp_list, stop_sign, myXSDtree):
         # MoldingInfo/Time
         if match(sheet.cell_value(irow, 0), 'Molding - time'):
             time = collections.OrderedDict()
-            if type(sheet.row_values(irow)[1]) == float:
+            if type(sheet.row_values(irow)[1]) == float or len(sheet.row_values(irow)[1]) > 0:
                 time = addKVU('Time', '', sheet.row_values(irow)[1],
                               sheet.row_values(irow)[2], '', '', '', '', time)
             else:
@@ -1448,7 +1448,7 @@ def sheetProcTypeHelper(sheet, row, temp_list, stop_sign, myXSDtree):
         # MoldingInfo/Pressure
         if match(sheet.cell_value(irow, 0), 'Molding - pressure'):
             pressure = collections.OrderedDict()
-            if type(sheet.row_values(irow)[1]) == float:
+            if type(sheet.row_values(irow)[1]) == float or len(sheet.row_values(irow)[1]) > 0:
                 pressure = addKVU('Pressure', '', sheet.row_values(irow)[1],
                                   sheet.row_values(irow)[2], '', '', '', '', pressure)
             else:
