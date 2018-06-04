@@ -963,22 +963,15 @@ def sheetProcTypeHelper(sheet, row, temp_list, stop_sign, myXSDtree):
     # Curing (skipped)
     # Solvent
         # SolventName
-        if match(sheet.cell_value(irow, 0), 'Solvent'):
+        if match(sheet.cell_value(irow, 0), 'Solvent - solvent amount'):
             temp = insert('SolventName', sheet.cell_value(irow, 1), temp)
-        # SolventComposition/volume
-        if match(sheet.cell_value(irow, 0), 'Solvent - composition (volume fraction)'):
-            solventV = collections.OrderedDict()
-            solventV = addKKV('SolventComposition', 'volume',
-                              sheet.row_values(irow)[1], solventV)
+        # SolventAmount
+            solventA = collections.OrderedDict()
+            if type(sheet.row_values(irow)[2]) == float or len(sheet.row_values(irow)[2]) > 0:
+                solventA = addKVU('SolventAmount', '', sheet.row_values(irow)[2],
+                              sheet.row_values(irow)[3], '', '', '', '', solventA)
             if len(solventV) > 0:
                 temp.append(solventV)
-        # SolventComposition/mass
-        if match(sheet.cell_value(irow, 0), 'Solvent - composition (weight fraction)'):
-            solventM = collections.OrderedDict()
-            solventM = addKKV('SolventComposition', 'mass',
-                              sheet.row_values(irow)[1], solventM)
-            if len(solventM) > 0:
-                temp.append(solventM)
 
     # Mixing
         # Description
