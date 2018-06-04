@@ -49,7 +49,7 @@ def read_excel_profile(filename):
     if not os.path.exists('./' + filename):
         # write the message in ./error_message.txt
         with open('./error_message.txt', 'a') as fid:
-            fid.write('[File Error] Missing file! Please include "%s" in your uploads.' % (filename))
+            fid.write('[File Error] Missing file! Please include "%s" in your uploads.\n' % (filename))
             return ''
     # open and read data
     data_file = xlrd.open_workbook('./'+filename)
