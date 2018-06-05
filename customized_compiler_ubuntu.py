@@ -495,17 +495,21 @@ def sheetMatType(sheet, DATA, myXSDtree):
     temp_list = [] # the highest level list for MATERIALS
     temp = [] # always save temp if not empty when we find a match in headers
     prevTemp = '' # save the previous cleanTemp
+    prevTempPST = '' # save the previous cleanTempPST
     for row in xrange(sheet.nrows):
         # First deal with the ParticleSurfaceTreatment
         cleanTempPST = matchList(sheet.cell_value(row, 0), headers_PST.keys())
         if cleanTempPST:
+            if len(prevTempPST) == 0: # initialize prevTemp
+                prevTempPST = cleanTempPST
             # save PST
             if len(PST) > 0: # update temp if it's not empty
                 # sort PST
-                PST = sortSequence(PST, cleanTempPST, myXSDtree)
-                FillerComponent.append({headers_PST[cleanTempPST]: PST})
+                PST = sortSequence(PST, prevTempPST, myXSDtree)
+                FillerComponent.append({headers_PST[prevTempPST]: PST})
                 # initialize
                 PST = []
+            prevTempPST = cleanTempPST # update prevTempPST    
         # Then deal with higher level headers
         cleanTemp = matchList(sheet.cell_value(row, 0), headers.keys())
         if cleanTemp:
@@ -521,10 +525,11 @@ def sheetMatType(sheet, DATA, myXSDtree):
             # bottom up into FillerComponent
             if len(PST) > 0:
                 # sort PST
-                PST = sortSequence(PST, cleanTempPST, myXSDtree)
+                PST = sortSequence(PST, prevTempPST, myXSDtree)
                 FillerComponent.append({'ParticleSurfaceTreatment': PST})
                 # initialize
                 PST = []
+                prevTempPST = ''
             # special case MatrixComponent, need to save the list from bottom up 
             # into temp
             if len(MatrixComponent) > 0:
@@ -963,15 +968,22 @@ def sheetProcTypeHelper(sheet, row, temp_list, stop_sign, myXSDtree):
     # Curing (skipped)
     # Solvent
         # SolventName
-        if match(sheet.cell_value(irow, 0), 'Solvent - solvent amount'):
+        if match(sheet.cell_value(irow, 0), 'Solvent'):
             temp = insert('SolventName', sheet.cell_value(irow, 1), temp)
-        # SolventAmount
-            solventA = collections.OrderedDict()
-            if type(sheet.row_values(irow)[2]) == float or len(sheet.row_values(irow)[2]) > 0:
-                solventA = addKVU('SolventAmount', '', sheet.row_values(irow)[2],
-                              sheet.row_values(irow)[3], '', '', '', '', solventA)
+        # SolventComposition/volume
+        if match(sheet.cell_value(irow, 0), 'Solvent - composition (volume fraction)'):
+            solventV = collections.OrderedDict()
+            solventV = addKKV('SolventComposition', 'volume',
+                              sheet.row_values(irow)[1], solventV)
             if len(solventV) > 0:
                 temp.append(solventV)
+        # SolventComposition/mass
+        if match(sheet.cell_value(irow, 0), 'Solvent - composition (weight fraction)'):
+            solventM = collections.OrderedDict()
+            solventM = addKKV('SolventComposition', 'mass',
+                              sheet.row_values(irow)[1], solventM)
+            if len(solventM) > 0:
+                temp.append(solventM)
 
     # Mixing
         # Description
