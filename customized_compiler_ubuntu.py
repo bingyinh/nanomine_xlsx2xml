@@ -2454,46 +2454,36 @@ def sheetPropElec(sheet, DATA_PROP, myXSDtree):
                 temp_list.append(dcdC) # directly append to the higher level list
         # Dielectric spectra (skipped, not in the schema)
         # Endurance strength (skipped, not in the schema)
-        # AC_DielectricDispersion
-        if match(sheet.cell_value(row, 0), 'AC dielectric dispersion'):
-            acdD = collections.OrderedDict() # a dict for all AC_DielectricDispersion entries
-            # Description
-            acdD = addKV('Description', sheet.cell_value(row, 1), acdD)
-            # Dielectric_Real_Permittivity
-            DRP = [] # a list for all Dielectric_Real_Permittivity entries
-            dataDRP = read_excel_profile(sheet.cell_value(row, 2)) # read excel
-            axisDRP = axisInfo(dataDRP)
-            if len(dataDRP) > 0:
-                DRP.append({'data': dataDRP})
-                if len(axisDRP) > 0:
-                    DRP.append({'AxisLabel': axisDRP})
-                # sort DRP
-                DRP = sortSequence(DRP, 'Distribution', myXSDtree)
-                acdD = addKV('Dielectric_Real_Permittivity', DRP, acdD) # add into acdD
-            # Dielectric_Loss_Permittivity
-            DLP = [] # a list for all Dielectric_Loss_Permittivity entries
-            dataDLP = read_excel_profile(sheet.cell_value(row, 3)) # read excel
-            axisDLP = axisInfo(dataDLP)
-            if len(dataDLP) > 0:
-                DLP.append({'data': dataDLP})
-                if len(axisDLP) > 0:
-                    DLP.append({'AxisLabel': axisDLP})
-                # sort DLP
-                DLP = sortSequence(DLP, 'Distribution', myXSDtree)
-                acdD = addKV('Dielectric_Loss_Permittivity', DLP, acdD) # add into acdD
-            # Dielectric_Loss_Tangent
-            DLT = [] # a list for all Dielectric_Loss_Tangent entries
-            dataDLT = read_excel_profile(sheet.cell_value(row, 4)) # read excel
-            axisDLT = axisInfo(dataDLT)
-            if len(dataDLT) > 0:
-                DLT.append({'data': dataDLT})
-                if len(axisDLT) > 0:
-                    DLT.append({'AxisLabel': axisDLT})
-                # sort DLT
-                DLT = sortSequence(DLT, 'Distribution', myXSDtree)
-                acdD = addKV('Dielectric_Loss_Tangent', DLT, acdD) # add into acdD
-            if len(acdD) > 0:
-                temp.append(acdD) # directly append to the higher level list
+        # AC_DielectricDispersion/Description
+        if match(sheet.cell_value(row, 0), 'Description'):
+            temp = insert('Description', sheet.cell_value(row, 1), temp)
+        # AC_DielectricDispersion/Dielectric_Real_Permittivity
+        if match(sheet.cell_value(row, 0), 'Real permittivity'):
+            reaP = collections.OrderedDict()
+            myRow = sheet.row_values(row) # save the list of row_values
+            while len(myRow) < 7:
+                myRow.append(unicode('')) # prevent IndexError
+            reaP = addKVU('Dielectric_Real_Permittivity', myRow[1], myRow[2], myRow[3], '', '', '', myRow[4], reaP)
+            if len(reaP) > 0:
+                temp.append(reaP)
+        # AC_DielectricDispersion/Dielectric_Loss_Permittivity
+        if match(sheet.cell_value(row, 0), 'Loss permittivity'):
+            losP = collections.OrderedDict()
+            myRow = sheet.row_values(row) # save the list of row_values
+            while len(myRow) < 7:
+                myRow.append(unicode('')) # prevent IndexError
+            losP = addKVU('Dielectric_Loss_Permittivity', myRow[1], myRow[2], myRow[3], '', '', '', myRow[4], losP)
+            if len(losP) > 0:
+                temp.append(losP)
+        # AC_DielectricDispersion/Dielectric_Loss_Tangent
+        if match(sheet.cell_value(row, 0), 'Loss tangent'):
+            losT = collections.OrderedDict()
+            myRow = sheet.row_values(row) # save the list of row_values
+            while len(myRow) < 7:
+                myRow.append(unicode('')) # prevent IndexError
+            losT = addKVU('Dielectric_Loss_Tangent', myRow[1], myRow[2], myRow[3], '', '', '', myRow[4], losT)
+            if len(losT) > 0:
+                temp.append(losT)
         # DielectricBreakdownStrength/Condition and Profile
         if match(sheet.cell_value(row, 0), 'Dielectric breakdown strength'):
             temp = insert('Condition', sheet.cell_value(row, 1), temp)
