@@ -970,8 +970,8 @@ def sheetProcTypeHelper(sheet, row, temp_list, stop_sign, myXSDtree):
         if match(sheet.cell_value(irow, 0), 'Solvent - solvent amount'):
             temp = insert('SolventName', sheet.cell_value(irow, 1), temp)
             amount = collections.OrderedDict()
-            amount = addKVU('SolventAmount', '', sheet.row_values(irow)[1],
-                            sheet.row_values(irow)[2], '', '', '', '', amount)
+            amount = addKVU('SolventAmount', '', sheet.row_values(irow)[2],
+                            sheet.row_values(irow)[3], '', '', '', '', amount)
             if len(amount) > 0:
                 temp.append(amount)
 
