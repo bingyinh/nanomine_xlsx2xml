@@ -1839,13 +1839,7 @@ def sheetPropMech(sheet, DATA_PROP, myXSDtree):
                 temp.append(fibE)
             # PoissonsRatio
         if match(sheet.cell_value(row, 0), '''Poisson's ratio'''):
-            poiR = collections.OrderedDict()
-            myRow = sheet.row_values(row) # save the list of row_values
-            while len(myRow) < 7:
-                myRow.append(unicode('')) # prevent IndexError
-            poiR = addKVU('PoissonsRatio', myRow[1], myRow[2], myRow[3], myRow[4], myRow[5], '', myRow[6], poiR)
-            if len(poiR) > 0:
-                temp.append(poiR)
+            temp = insert('PoissonsRatio', sheet.cell_value(row, 2), temp) 
         # Flexural
             # FlexuralModulus
         if match(sheet.cell_value(row, 0), 'Flexural modulus'):
