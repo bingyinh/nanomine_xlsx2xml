@@ -1084,7 +1084,13 @@ def sheetProcTypeHelper(sheet, row, temp_list, stop_sign, myXSDtree):
         # Single(Twin)ScrewExtrusion/HeatingZone
             # heatingZoneNumber
         if match(sheet.cell_value(irow, 0), 'Heating zone - number'):
-            ExtrsHZ = insert('heatingZoneNumber', sheet.cell_value(irow, 1), ExtrsHZ)
+            if type(sheet.cell_value(irow, 1)) == float:
+                if int(sheet.cell_value(irow, 1)) == sheet.cell_value(irow, 1):
+                    ExtrsHZ = insert('heatingZoneNumber', int(sheet.cell_value(irow, 1)), ExtrsHZ)
+                else:
+                    ExtrsHZ = insert('heatingZoneNumber', sheet.cell_value(irow, 1), ExtrsHZ)
+            else: # if user enters non-number value, save it and raise error
+                ExtrsHZ = insert('heatingZoneNumber', sheet.cell_value(irow, 1), ExtrsHZ)
             # lengthOfHeatingZone
         if match(sheet.cell_value(irow, 0), 'Heating zone - length'):
             length = collections.OrderedDict()
@@ -1264,7 +1270,13 @@ def sheetProcTypeHelper(sheet, row, temp_list, stop_sign, myXSDtree):
                 Extrusion.append(lead)
         # SingleScrewExtrusion/NumberOfChannelsPerScrew
         if match(sheet.cell_value(irow, 0), 'Number of channels per screw'):
-            Extrusion = insert('NumberOfChannelsPerScrew', sheet.cell_value(irow, 1), Extrusion)
+            if type(sheet.cell_value(irow, 1)) == float:
+                if int(sheet.cell_value(irow, 1)) == sheet.cell_value(irow, 1):
+                    Extrusion = insert('NumberOfChannelsPerScrew', int(sheet.cell_value(irow, 1)), Extrusion)
+                else:
+                    Extrusion = insert('NumberOfChannelsPerScrew', sheet.cell_value(irow, 1), Extrusion)
+            else: # if user enters non-number value, save it and raise error
+                Extrusion = insert('NumberOfChannelsPerScrew', sheet.cell_value(irow, 1), Extrusion)
         # SingleScrewExtrusion/ScrewChannelWidth
         if match(sheet.cell_value(irow, 0), 'Screw channel width'):
             width = collections.OrderedDict()
