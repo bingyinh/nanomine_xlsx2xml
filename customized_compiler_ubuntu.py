@@ -27,7 +27,7 @@ from xml_update_validator import runValidation
 
 ## Global variable myXSDtree
 # read the xsd tree
-xsdDir = "./PNC_schema_060618.xsd"
+xsdDir = "./PNC_schema_060718.xsd"
 myXSDtree = ET.parse(xsdDir)
 # DATA containers
 DATA = [] # the list that will finally be turned into a dict for dicttoxml
