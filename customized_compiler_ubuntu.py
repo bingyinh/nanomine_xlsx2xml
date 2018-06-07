@@ -2974,10 +2974,22 @@ def sheetMicrostructure(sheet, DATA, myXSDtree):
             prevTemp = cleanTemp # update prevTemp
         # ImageFile/File
         if match(sheet.cell_value(row, 0), 'Microstructure filename'): #(!!!!!!!!!!!!!!!!!)
-            imageDir = ''
             if len(str(sheet.cell_value(row, 1)).strip()) > 0:
-                imageDir = '/XMLCONV/media/'+ pidsid + '/' + str(sheet.cell_value(row, 1)).strip()
-            temp = insert('File', imageDir, temp)
+                filename = str(sheet.cell_value(row, 1)).strip()
+                if filename.split('.')[-1] not in ['png', 'jpg', 'tif', 'tiff', 'gif']:
+                    # write the message in ./error_message.txt
+                    with open('./error_message.txt', 'a') as fid:
+                        fid.write('[File Error] "%s" is not an acceptable image file. Please check the file extension.\n' % (filename))
+                        continue
+                # confirm whether the file exists
+                if not os.path.exists('./' + filename):
+                    # write the message in ./error_message.txt
+                    with open('./error_message.txt', 'a') as fid:
+                        fid.write('[File Error] Missing file! Please include "%s" in your uploads.\n' % (filename))
+                        continue
+                imageDir = ''
+                imageDir = '/XMLCONV/media/'+ pidsid + '/' + filename
+                temp = insert('File', imageDir, temp)
         # ImageFile/Description
         if match(sheet.cell_value(row, 0), 'Description'):
             temp = insert('Description', sheet.cell_value(row, 1), temp)
