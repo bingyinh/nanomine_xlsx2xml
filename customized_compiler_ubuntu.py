@@ -1025,12 +1025,9 @@ def sheetProcTypeHelper(sheet, row, temp_list, stop_sign, myXSDtree):
     # Extrusion
         # first detect the correct header, single or twin
         if matchList(sheet.cell_value(irow, 0), extrsHeaders.keys()):
-            # since we always initialize prevExtrsHeader after saving the
-            # Extrusion list, prevExtrsHeader should be '' every time we find a
-            # match in extrsHeaders
-            if len(prevExtrsHeader) > 0:
-                print "Collision! 'Extrusion - Single screw extrusion' and 'Extrusion - Twin screw extrusion'"
-            prevExtrsHeader = extrsHeaders[sheet.cell_value(irow, 0)]
+            # only if all the Extrusion lists are empty we update the prevExtrsHeader
+            if len(Extrusion) == 0 and len(ExtrsHZ) == 0 and len(ExtrsOP) == 0:
+                prevExtrsHeader = extrsHeaders[sheet.cell_value(irow, 0)]
         # Single(Twin)ScrewExtrusion/Extruder
         if match(sheet.cell_value(irow, 0), 'Extruder'):
             Extrusion = insert('Extruder', sheet.cell_value(irow, 1), Extrusion)
