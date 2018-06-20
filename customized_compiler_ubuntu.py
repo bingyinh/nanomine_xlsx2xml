@@ -642,7 +642,7 @@ def sheetMatType(sheet, DATA, myXSDtree):
         if match(sheet.cell_value(row, 0), 'Filler chemical name/Filler name'):
             FillerComponent = insert('ChemicalName', sheet.cell_value(row, 1), FillerComponent)
             # FillerComponent/PubChemRef
-        if match(sheet.cell_value(row, 0), 'PubChem Reference'):
+        if match(sheet.cell_value(row, 0), 'Filler PubChem Reference'):
             FillerComponent = insert('PubChemRef', sheet.cell_value(row, 1), FillerComponent)
             # FillerComponent/Abbreviation
         if match(sheet.cell_value(row, 0), 'Filler abbreviation'):
@@ -799,7 +799,7 @@ def sheetMatType(sheet, DATA, myXSDtree):
     # bottom up into FillerComponent
     if len(PST) > 0:
         # sort PST
-        PST = sortSequence(PST, cleanTempPST, myXSDtree)
+        PST = sortSequence(PST, prevTempPST, myXSDtree)
         FillerComponent.append({'ParticleSurfaceTreatment': PST})
         # initialize
         PST = []
@@ -1583,7 +1583,7 @@ def sheetCharMeth(sheet, DATA, myXSDtree):
                'Neutron scattering': 'Neutron_Scattering',
                'Light scattering': 'Light_Scattering',
                'Pulsed electro acoustic': 'Pulsed_Electro_Acoustic',
-               'Rheometry': 'Rheometry',
+               'Rheometry': 'Rheometery',
                'Electrometry': 'Electrometry'}
     temp_list = [] # the highest level list for CHARACTERIZATION
     temp = [] # always save temp if not empty when we find a match in headers
