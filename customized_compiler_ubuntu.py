@@ -2966,7 +2966,7 @@ def sheetMicrostructure(sheet, DATA, myXSDtree):
         if match(sheet.cell_value(row, 0), 'Microstructure filename'): #(!!!!!!!!!!!!!!!!!)
             if len(str(sheet.cell_value(row, 1)).strip()) > 0:
                 filename = str(sheet.cell_value(row, 1)).strip()
-                if filename.split('.')[-1] not in ['png', 'jpg', 'tif', 'tiff', 'gif']:
+                if filename.split('.')[-1].lower() not in ['png', 'jpg', 'tif', 'tiff', 'gif']:
                     # write the message in ./error_message.txt
                     with open('./error_message.txt', 'a') as fid:
                         fid.write('[File Error] "%s" is not an acceptable image file. Please check the file extension.\n' % (filename))
@@ -2975,7 +2975,7 @@ def sheetMicrostructure(sheet, DATA, myXSDtree):
                 if not os.path.exists('./' + filename):
                     # write the message in ./error_message.txt
                     with open('./error_message.txt', 'a') as fid:
-                        fid.write('[File Error] Missing file! Please include "%s" in your uploads.\n' % (filename))
+                        fid.write('[File Error] Missing file! Please include "%s" in your uploads. Could be the spelling of the file extension.\n' % (filename))
                         continue
                 imageDir = ''
                 imageDir = '/XMLCONV/media/'+ pidsid + '/' + filename
