@@ -104,6 +104,11 @@ def extractID(xlsxName, myXSDtree):
     if message == '':
         # call localDOI here
         localdoiDict = localDOI(DOI, myXSDtree)
+        # if doi is not valid
+        if localdoiDict is None:
+            with open('./error_message.txt', 'a') as fid:
+                fid.write('[DOI Error] Please check the reported DOI, it seems that DOI does not exist.\n')
+            return
         # generate ID here
         newID = generateID(localdoiDict, ID_raw)
         # write the ID in ./ID.txt
@@ -131,6 +136,9 @@ def localDOI(DOI, myXSDtree):
             pickle.dump(alldoiDict, f)
         # now fetch the metadata using doi-crawler and save to alldoiDict, doi.pkl
         crawlerDict = mainDOIsoupFirst(DOI)
+        # if doi is not valid, mainDOIsoupFirst() returns {}
+        if len(crawlerDict) == 0:
+            return None
         # transfer the newdoiDict to an xml element
         tree = dict2element(crawlerDict, myXSDtree) # an xml element
         citation = tree.find('.//Citation')
