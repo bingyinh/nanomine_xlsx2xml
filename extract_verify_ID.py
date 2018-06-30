@@ -162,7 +162,7 @@ def generateID(doiDict, SID):
     PubYearRaw = doiDict['metadata'].find('.//PublicationYear')
     if PubYearRaw is not None:
         PubYear = PubYearRaw.text
-    return '_'.join([str(PID), SID, LastName, PubYear])
+    return '_'.join(['L'+str(PID), SID, LastName, PubYear])
 
 # convert DOI crawler dict into an xml element
 def dict2element(crawlerDict, myXSDtree):
