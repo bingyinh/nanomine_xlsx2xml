@@ -21,20 +21,11 @@ import xml.etree.ElementTree as ET
 
 # -------------------------------------------- DOI information retriever
 from doiretriever import mainDOI          # extract publication info by DOI
+import pickle                             # Python standard library
 
 # -------------------------------------------- XML-XSD validation tool
 from xml_update_validator import runValidation
 
-## Global variable myXSDtree
-# read the xsd tree
-xsdDir = "./PNC_schema_060718.xsd"
-myXSDtree = ET.parse(xsdDir)
-# DATA containers
-DATA = [] # the list that will finally be turned into a dict for dicttoxml
-DATA_PROP = [] # the list for the PROPERTIES section
-# Sub categories of addressed PROPERTIES
-propSet = {"mechanical", "viscoelastic", "electrical", "thermal", "volumetric",
-           "rheological"}
 
 ## Helper Methods
 # a helper method to extract data from Excel files attached with the template
@@ -328,6 +319,9 @@ def addKKV(key_1, key_2, val, dict_in):
 # a helper method to identify which property is addressed in "Properties
 # Addressed" sheets and return a list of saved properties
 def whichProp(sheet, DATA_PROP, myXSDtree):
+    # Sub categories of addressed PROPERTIES
+    propSet = {"mechanical", "viscoelastic", "electrical", "thermal", "volumetric",
+               "rheological"}
     for row in xrange(sheet.nrows):
         # scan the first column until we find a match in propSet
         if (sheet.cell_value(row, 0).strip().lower() in propSet):
@@ -445,8 +439,8 @@ def sheetSampleInfo(sheet, DATA, myXSDtree):
         elif match(sheet.row_values(row)[0], 'Date of Data Measurement'):
             LabGenerated = insert('DateOfMeasurement', sheet.row_values(row)[1], LabGenerated)
     # end of reading rows, call DOI retriever and log changes
-    print DOI
     if len(DOI) > 0:
+
         doiDict = mainDOI(DOI)
         for key in doiDict:
             if key == "ISSN" or key == "Issue":
@@ -482,7 +476,6 @@ def sheetSampleInfo(sheet, DATA, myXSDtree):
     if len(LabGenerated) > 0:
         DATA.append({'DATA_SOURCE': {'LabGenerated': LabGenerated}})
     return (ID, DATA)
-
 
 # Sheet 2. Material Types
 def sheetMatType(sheet, DATA, myXSDtree):
@@ -3039,70 +3032,79 @@ def sheetMicrostructure(sheet, DATA, myXSDtree):
         DATA.append({'MICROSTRUCTURE': temp_list})
     return DATA
 
+## main
+if __name__ == '__main__':
+    ## Global variable myXSDtree
+    # read the xsd tree
+    # xsdDir = "./PNC_schema_060718.xsd"
+    xsdDir = './'+sys.argv[2]
+    myXSDtree = ET.parse(xsdDir)
+    # DATA containers
+    DATA = [] # the list that will finally be turned into a dict for dicttoxml
+    DATA_PROP = [] # the list for the PROPERTIES section
+    
+    ## Data extraction
+    # Read the Excel template
+    # glob.glob is included in default Python library for communicating with the file system
+    filename = './'+sys.argv[1] # sys.argv[1] command line action
+    # filename = './master_template_03302018.xlsx'
+    xlsx_files = glob.glob(filename)
+    
+    # xlrd is the library used to read xlsx file
+    # https://secure.simplistix.co.uk/svn/xlrd/trunk/xlrd/doc/xlrd.html?p=4966
+    xlfile = xlrd.open_workbook(xlsx_files[0])
 
-## Data extraction
-# Read the Excel template
-# glob.glob is included in default Python library for communicating with the file system
-filename = './'+sys.argv[1] # sys.argv[1] command line action
-# filename = './master_template_03302018.xlsx'
-print filename
-xlsx_files = glob.glob(filename)
-print xlsx_files
+    ## DEBUG SECTION
+    ##sheet = xlfile.sheets()[5]
+    ##DATA = sheetProcType(sheet, DATA)
 
-# xlrd is the library used to read xlsx file
-# https://secure.simplistix.co.uk/svn/xlrd/trunk/xlrd/doc/xlrd.html?p=4966
-xlfile = xlrd.open_workbook(xlsx_files[0])
+    ## RUNNING SECTION
+    # store those sheet objects in a list and loop through the list
+    sheet_content = xlfile.sheets()
+    for sheet in sheet_content:
+        # check the header of the sheet to determine what it has inside
+        if (sheet.row_values(0)[0].strip().lower() == "sample info"):
+            # sample info sheet
+            (ID, DATA) = sheetSampleInfo(sheet, DATA, myXSDtree)
+        elif (sheet.row_values(0)[0].strip().lower() == "material types"):
+            # material types sheet
+            DATA = sheetMatType(sheet, DATA, myXSDtree)
+        elif (sheet.row_values(0)[0].strip().lower() == "synthesis and processing"):
+            # synthesis and processing sheet
+            DATA = sheetProcType(sheet, DATA, myXSDtree)
+        elif (sheet.row_values(0)[0].strip().lower() == "characterization methods"):
+            # characterization methods sheet
+            DATA = sheetCharMeth(sheet, DATA, myXSDtree)
+        elif (sheet.row_values(0)[0].strip().lower() == "properties addressed"):
+            # properties addressed sheet, this part will be saved in DATA_PROP which
+            # will be thereafter saved in DATA
+            DATA_PROP = whichProp(sheet, DATA_PROP, myXSDtree)
+        elif (sheet.row_values(0)[0].strip().lower() == "microstructure"):
+            # microstructure sheet
+            DATA = sheetMicrostructure(sheet, DATA, myXSDtree)
+    if len(DATA_PROP) > 0:
+        # sort DATA_PROP
+        DATA_PROP = sortSequence(DATA_PROP, 'PROPERTIES', myXSDtree)
+        DATA.append({'PROPERTIES': DATA_PROP})
 
-## DEBUG SECTION
-##sheet = xlfile.sheets()[5]
-##DATA = sheetProcType(sheet, DATA)
+    ## Finish constructing DATA list, generate the output xml file
+    # sort DATA
+    DATA = sortSequence(DATA, 'PolymerNanocomposite', myXSDtree)
+    # organize the Python dictionary
+    # https://docs.python.org/2/library/collections.html#collections.OrderedDict
+    diffusionData = collections.OrderedDict({'item':DATA})
 
-## RUNNING SECTION
-# store those sheet objects in a list and loop through the list
-sheet_content = xlfile.sheets()
-for sheet in sheet_content:
-    # check the header of the sheet to determine what it has inside
-    if (sheet.row_values(0)[0].strip().lower() == "sample info"):
-        # sample info sheet
-        (ID, DATA) = sheetSampleInfo(sheet, DATA, myXSDtree)
-    elif (sheet.row_values(0)[0].strip().lower() == "material types"):
-        # material types sheet
-        DATA = sheetMatType(sheet, DATA, myXSDtree)
-    elif (sheet.row_values(0)[0].strip().lower() == "synthesis and processing"):
-        # synthesis and processing sheet
-        DATA = sheetProcType(sheet, DATA, myXSDtree)
-    elif (sheet.row_values(0)[0].strip().lower() == "characterization methods"):
-        # characterization methods sheet
-        DATA = sheetCharMeth(sheet, DATA, myXSDtree)
-    elif (sheet.row_values(0)[0].strip().lower() == "properties addressed"):
-        # properties addressed sheet, this part will be saved in DATA_PROP which
-        # will be thereafter saved in DATA
-        DATA_PROP = whichProp(sheet, DATA_PROP, myXSDtree)
-    elif (sheet.row_values(0)[0].strip().lower() == "microstructure"):
-        # microstructure sheet
-        DATA = sheetMicrostructure(sheet, DATA, myXSDtree)
-if len(DATA_PROP) > 0:
-    # sort DATA_PROP
-    DATA_PROP = sortSequence(DATA_PROP, 'PROPERTIES', myXSDtree)
-    DATA.append({'PROPERTIES': DATA_PROP})
+    # using dicttoxml library to convert dictionary to xml
+    diffusionDataxml = dicttoxml.dicttoxml(diffusionData,custom_root='PolymerNanocomposite',attr_type=False)
+    # need to remove all <item> and </item> and <item > in the xml
+    diffusionDataxml = diffusionDataxml.replace('<item>', '').replace('</item>', '').replace('<item >', '')
+    # make directory for xml output
+    os.mkdir('./xml')
+    # write information to ./xml/ID.xml
+    filename = './xml/' + str(ID) + '.xml'
+    with codecs.open(filename, 'w', "utf-8") as _f:
+        _f.write("%s\n" % (parseString(diffusionDataxml).toprettyxml())[23:])
 
-## Finish constructing DATA list, generate the output xml file
-# sort DATA
-DATA = sortSequence(DATA, 'PolymerNanocomposite', myXSDtree)
-# organize the Python dictionary
-# https://docs.python.org/2/library/collections.html#collections.OrderedDict
-diffusionData = collections.OrderedDict({'item':DATA})
+    ## Validate the xml file
+    logName = runValidation(filename, xsdDir)
 
-# using dicttoxml library to convert dictionary to xml
-diffusionDataxml = dicttoxml.dicttoxml(diffusionData,custom_root='PolymerNanocomposite',attr_type=False)
-# need to remove all <item> and </item> and <item > in the xml
-diffusionDataxml = diffusionDataxml.replace('<item>', '').replace('</item>', '').replace('<item >', '')
-# make directory for xml output
-os.mkdir('./xml')
-# write information to ./xml/ID.xml
-filename = './xml/' + str(ID) + '.xml'
-with codecs.open(filename, 'w', "utf-8") as _f:
-    _f.write("%s\n" % (parseString(diffusionDataxml).toprettyxml())[23:])
-
-## Validate the xml file
-logName = runValidation(filename, xsdDir)
