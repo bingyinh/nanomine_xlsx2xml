@@ -373,22 +373,28 @@ def sheetSampleInfo(sheet, DATA, myXSDtree):
     LabGenerated = []
     # a flag for DOI
     DOI = ""
+    # ID read from ID.txt, in views.py only ID.txt exists this script will
+    # be called
+    with open('ID.txt', 'r+') as fid:
+        ID = fid.read()
     for row in xrange(sheet.nrows):
-        # ID
-        if match(sheet.row_values(row)[0], 'Sample ID'):
-            _ID = str(sheet.row_values(row)[1])
-            print _ID
-            if len(_ID) > 0:
-                ID = _ID
-            else:# if ID does not exist, generate one (unpublished)
-                _uniq_id = uuid.uuid4()
-                ID = str(_uniq_id)
-            print 'ID', ID
+        # if match(sheet.row_values(row)[0], 'Sample ID'):
+        #     _ID = str(sheet.row_values(row)[1])
+        #     print _ID
+        #     if len(_ID) > 0:
+        #         ID = _ID
+        #     else:# if ID does not exist, generate one (unpublished)
+        #         _uniq_id = uuid.uuid4()
+        #         ID = str(_uniq_id)
+        #     print 'ID', ID
         # Control_ID
         if match(sheet.row_values(row)[0], 'Control sample ID'):
             control = sheet.row_values(row)[1]
             if len(str(control)) > 0:
-                DATA.append({'Control_ID': control})
+                IDseg = ID.split('_')
+                IDseg[1] = control.strip()
+                assembledCtrl = '_'.join(IDseg)
+                DATA.append({'Control_ID': assembledCtrl})
         elif match(sheet.row_values(row)[0], 'Your Name'):
             UploaderName = sheet.row_values(row)[1]
         
@@ -438,23 +444,23 @@ def sheetSampleInfo(sheet, DATA, myXSDtree):
             LabGenerated = insert('DateOfSampleMade', sheet.row_values(row)[1], LabGenerated)
         elif match(sheet.row_values(row)[0], 'Date of Data Measurement'):
             LabGenerated = insert('DateOfMeasurement', sheet.row_values(row)[1], LabGenerated)
-    # end of reading rows, call DOI retriever and log changes
-    if len(DOI) > 0:
+    # # end of reading rows, call DOI retriever and log changes
+    # if len(DOI) > 0:
 
-        doiDict = mainDOI(DOI)
-        for key in doiDict:
-            if key == "ISSN" or key == "Issue":
-                if len(doiDict[key]) > 0:
-                    Journal = insert(key, doiDict[key][0], Journal)
-            elif key == "Author" or key == "Keyword":
-                if len(doiDict[key]) > 0:
-                    CommonFields = doiAdd({key: doiDict[key]}, CommonFields)
-            elif key == "Institution":
-                if len(doiDict[key]) > 0:
-                    CommonFields = doiAdd({u"Location": [doiDict[key][0]]}, CommonFields)
-            else:
-                if len(doiDict[key]) > 0:
-                    CommonFields = doiAdd({key: [doiDict[key][0]]}, CommonFields)
+    #     doiDict = mainDOI(DOI)
+    #     for key in doiDict:
+    #         if key == "ISSN" or key == "Issue":
+    #             if len(doiDict[key]) > 0:
+    #                 Journal = insert(key, doiDict[key][0], Journal)
+    #         elif key == "Author" or key == "Keyword":
+    #             if len(doiDict[key]) > 0:
+    #                 CommonFields = doiAdd({key: doiDict[key]}, CommonFields)
+    #         elif key == "Institution":
+    #             if len(doiDict[key]) > 0:
+    #                 CommonFields = doiAdd({u"Location": [doiDict[key][0]]}, CommonFields)
+    #         else:
+    #             if len(doiDict[key]) > 0:
+    #                 CommonFields = doiAdd({key: [doiDict[key][0]]}, CommonFields)
     #with open('/home/NANOMINE/ONR/Converter_web/record/upload_history', 'a+') as _f:
     with open('./upload_history.txt', 'a+') as _f:
         _f.write(CurrentTime + '\t' + str(ID) + '\t' + '(' + str(UploaderName) +  ')' + '\t' + str(UploaderEmail) + '\n')
@@ -475,7 +481,7 @@ def sheetSampleInfo(sheet, DATA, myXSDtree):
         DATA.append({'DATA_SOURCE': {'Citation': {'CommonFields':CommonFields, 'CitationType': {'Journal':Journal}}}})
     if len(LabGenerated) > 0:
         DATA.append({'DATA_SOURCE': {'LabGenerated': LabGenerated}})
-    return (ID, DATA)
+    return (ID, DATA, DOI)
 
 # Sheet 2. Material Types
 def sheetMatType(sheet, DATA, myXSDtree):
@@ -3065,7 +3071,7 @@ if __name__ == '__main__':
         # check the header of the sheet to determine what it has inside
         if (sheet.row_values(0)[0].strip().lower() == "sample info"):
             # sample info sheet
-            (ID, DATA) = sheetSampleInfo(sheet, DATA, myXSDtree)
+            (ID, DATA, DOI) = sheetSampleInfo(sheet, DATA, myXSDtree)
         elif (sheet.row_values(0)[0].strip().lower() == "material types"):
             # material types sheet
             DATA = sheetMatType(sheet, DATA, myXSDtree)
@@ -3098,12 +3104,28 @@ if __name__ == '__main__':
     diffusionDataxml = dicttoxml.dicttoxml(diffusionData,custom_root='PolymerNanocomposite',attr_type=False)
     # need to remove all <item> and </item> and <item > in the xml
     diffusionDataxml = diffusionDataxml.replace('<item>', '').replace('</item>', '').replace('<item >', '')
+    # load xmlstring into ET
+    tree = ET.ElementTree()
+    root = ET.fromstring(diffusionDataxml)
+    tree._setroot(root)
+    # if DOI exists, substitute the Citation element
+    if len(DOI) > 0:
+        with open('doi.pkl', 'rb') as f:
+            alldoiDict = pickle.load(f)
+        citationEle = alldoiDict[DOI]['metadata']
+        parent = root.find('.//Citation/..')
+        if parent.find('Citation') is not None:
+            parent.remove(parent.find('Citation')) # remove
+        # insert the crawled Citation
+        parent.insert(0, citationEle)
+    # 
     # make directory for xml output
     os.mkdir('./xml')
     # write information to ./xml/ID.xml
     filename = './xml/' + str(ID) + '.xml'
-    with codecs.open(filename, 'w', "utf-8") as _f:
-        _f.write("%s\n" % (parseString(diffusionDataxml).toprettyxml())[23:])
+    tree.write(filename, encoding="UTF-8", xml_declaration=True)
+    # with codecs.open(filename, 'w', "utf-8") as _f:
+    #     _f.write("%s\n" % (parseString(diffusionDataxml).toprettyxml())[23:])
 
     ## Validate the xml file
     logName = runValidation(filename, xsdDir)
