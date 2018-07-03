@@ -322,21 +322,30 @@ def whichProp(sheet, DATA_PROP, myXSDtree):
     # Sub categories of addressed PROPERTIES
     propSet = {"mechanical", "viscoelastic", "electrical", "thermal", "volumetric",
                "rheological"}
+    # Each property should only have one sheet and its corresponding helper
+    # method should only be called once, create flags here for that purpose.
+    (me, vi, el, th, vo, rh) = (False, False,  False,  False,  False,  False)
     for row in xrange(sheet.nrows):
         # scan the first column until we find a match in propSet
         if (sheet.cell_value(row, 0).strip().lower() in propSet):
-            if (sheet.cell_value(row, 0).strip().lower() == "mechanical"):
+            if (sheet.cell_value(row, 0).strip().lower() == "mechanical" and not me):
                 DATA_PROP = sheetPropMech(sheet, DATA_PROP, myXSDtree)
-            if (sheet.cell_value(row, 0).strip().lower() == "viscoelastic"):
+                me = True
+            if (sheet.cell_value(row, 0).strip().lower() == "viscoelastic" and not vi):
                 DATA_PROP = sheetPropVisc(sheet, DATA_PROP, myXSDtree)
-            if (sheet.cell_value(row, 0).strip().lower() == "electrical"):
+                vi = True
+            if (sheet.cell_value(row, 0).strip().lower() == "electrical" and not el):
                 DATA_PROP = sheetPropElec(sheet, DATA_PROP, myXSDtree)
-            if (sheet.cell_value(row, 0).strip().lower() == "thermal"):
+                el = True
+            if (sheet.cell_value(row, 0).strip().lower() == "thermal" and not th):
                 DATA_PROP = sheetPropTher(sheet, DATA_PROP, myXSDtree)
-            if (sheet.cell_value(row, 0).strip().lower() == "volumetric"):
+                th = True
+            if (sheet.cell_value(row, 0).strip().lower() == "volumetric" and not vo):
                 DATA_PROP = sheetPropVolu(sheet, DATA_PROP, myXSDtree)
-            if (sheet.cell_value(row, 0).strip().lower() == "rheological"):
+                vo = True
+            if (sheet.cell_value(row, 0).strip().lower() == "rheological" and not rh):
                 DATA_PROP = sheetPropRheo(sheet, DATA_PROP, myXSDtree)
+                rh = True
     return DATA_PROP
 
 # a helper method to add information extracted by DOI retriever into the
@@ -595,7 +604,7 @@ def sheetMatType(sheet, DATA, myXSDtree):
         if match(sheet.cell_value(row, 0), 'Tacticity'):
             MatrixComponent = insert('Tacticity', sheet.cell_value(row, 1), MatrixComponent)
             # MatrixComponent/Density
-        if match(sheet.cell_value(row, 0), 'Density'):
+        if match(sheet.cell_value(row, 0), 'Density') and prevTemp == 'Matrix':
             denS = collections.OrderedDict()
             myRow = sheet.row_values(row) # save the list of row_values
             denS = addKVU('Density', myRow[1], myRow[2], myRow[3], '', '', '', '', denS)
@@ -653,7 +662,7 @@ def sheetMatType(sheet, DATA, myXSDtree):
         if match(sheet.cell_value(row, 0), 'Trade name'):
             FillerComponent = insert('TradeName', sheet.cell_value(row, 1), FillerComponent)
             # FillerComponent/Density
-        if match(sheet.cell_value(row, 0), 'Density'):
+        if match(sheet.cell_value(row, 0), 'Density') and prevTemp == 'Filler':
             denS = collections.OrderedDict()
             myRow = sheet.row_values(row) # save the list of row_values
             denS = addKVU('Density', myRow[1], myRow[2], myRow[3], '', '', '', '', denS)
@@ -2124,7 +2133,7 @@ def sheetPropVisc(sheet, DATA_PROP, myXSDtree):
         # DynamicProperties/DMA_mode
         if match(sheet.cell_value(row, 0), 'DMA mode'):
             if len(str(sheet.cell_value(row, 1))) > 0:
-                prevDMA = sheet.cell_value(row, 1) # update prevDMA
+                prevDMA = sheet.cell_value(row, 1).strip() # update prevDMA
         # DynamicProperties/DMA_mode/.../condition/temperature
         if match(sheet.cell_value(row, 0), 'Temperature'):
             temP = collections.OrderedDict()
@@ -2301,37 +2310,40 @@ def sheetPropVisc(sheet, DATA_PROP, myXSDtree):
         temp = sortSequence(temp, prevTemp, myXSDtree)
         temp_list.append({headers[prevTemp]: temp})
         temp = []
-    # there should only be at most one dict with the key "DynamicProperties"
-    dynP_num = 0 # number of occurrence of "DynamicProperties" in temp_list, should be no more than one
-    dynP_index = -1 # the index of dict "DynamicProperties" in temp_list
-    for i in xrange(len(temp_list)):
-        myDict = temp_list[i]
-        if "DynamicProperties" in myDict.keys():
-            dynP_num += 1
-            dynP_index = i
-    assert(dynP_num) < 2
     # scan for multiple DynamicPropertyProfile (DMA_file.xlsx)
-    if DMA_file_num > 0: # this implies that dynP_index is not -1
-        assert(dynP_index > -1) # assert that dynP_index is not -1
-        dynP_dict = temp_list.pop(dynP_index) # get the dict "DynamicProperties" out
-        dynP_list = dynP_dict['DynamicProperties'] # get the list of subdicts out
-        dynP_list_no_dynPP = [] # a list for non DynamicProperties/DynamicPropertyProfile subdicts
-        dynPP_list = [] # a list for DynamicProperties/DynamicPropertyProfile subdicts
-        # iterate through all subdicts in dynP_list
-        for subdict in dynP_list:
-            if 'DynamicPropertyProfile' in subdict.keys():
-                dynPP_list.append(subdict)
+    if DMA_file_num > 0:
+        temp_list_new = [] # prepare a new temp_list
+        for i in xrange(len(temp_list)):
+            myDict = temp_list[i]
+            if 'DynamicProperties' in myDict.keys():
+                dynP_list = myDict['DynamicProperties'] # get the list of subdicts out
+                dynP_list_no_dynPP = [] # initialize dynP_list_no_dynPP
+                dynPPs = [] # a list for non DynamicProperties/DynamicPropertyProfile subdicts
+                poplist = [] # a list for DPP index to be poped
+                # loop thru Description, MeasurementMode, DMA_mode, DynamicPropertyProfile ...
+                for i in xrange(len(dynP_list)):
+                    od = dynP_list[i]
+                    # if we find a DPP OrderedDict
+                    if 'DynamicPropertyProfile' in od.keys():
+                        # add it to poplist
+                        poplist.append(i)
+                # reverse the poplist and pop
+                for j in poplist[::-1]:
+                    # insert to the front
+                    dynPPs = [dynP_list.pop(j)] + dynPPs
+                # now dynP_list should have no OrderedDict has key 'DynamicPropertyProfile'
+                # deepcopy it as dynP_list_no_dynPP
+                dynP_list_no_dynPP = copy.deepcopy(dynP_list)
+                # assemble the new dynP_list and put it into temp_list_new
+                for dynPP in dynPPs:
+                    dynP_list_with_dynPP = dynP_list_no_dynPP + [dynPP]
+                    temp_list_new.append({'DynamicProperties': dynP_list_with_dynPP})
+            # skip Creep dicts
             else:
-                dynP_list_no_dynPP.append(subdict)
-        # length of dynPP_list must be the same with DMA_file_num
-        assert(len(dynPP_list) == DMA_file_num)
-        # loop through all items in dynPP_list
-        for dynPP in dynPP_list:
-            temp = copy.deepcopy(dynP_list_no_dynPP)
-            temp.append(dynPP) # add dynPP into temp
-            # sort temp
-            temp = sortSequence(temp, 'Dynamic properties', myXSDtree)
-            temp_list.append({'DynamicProperties': temp}) # add temp into temp_list
+                temp_list_new.append(myDict)
+        # replace temp_list with temp_list_new
+        temp_list = temp_list_new
+   
     # add temp_list into DATA_PROP
     if len(temp_list) > 0:
         # sort temp_list
