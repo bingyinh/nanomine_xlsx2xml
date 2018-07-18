@@ -9,6 +9,7 @@ import pickle
 import xml.etree.ElementTree as ET
 import dicttoxml
 import collections
+import copy
 
 # a helper method to find a blurry match regardless of # signs between two
 # strings, testant is the standard expression
@@ -126,11 +127,12 @@ def extractID(xlsxName, myXSDtree):
 def localDOI(DOI, myXSDtree):
     with open('doi.pkl','rb') as f:
         alldoiDict = pickle.load(f)
+        rollback = copy.deepcopy(alldoiDict)
     if DOI not in alldoiDict:
         # assign it 'nextPID', update 'nextPID', save it into alldoiDict, update
         # doi.pkl, fetching the metadata is slow, so we need to make sure the
         # paperID is updated in the doi.pkl first to avoid collision.
-        PID = alldoiDict['nextPID']
+        PID = 'L' + str(alldoiDict['nextPID'])
         alldoiDict['nextPID'] += 1
         alldoiDict[DOI] = {'paperID':PID}
         with open('doi.pkl', 'wb') as f:
@@ -139,6 +141,8 @@ def localDOI(DOI, myXSDtree):
         crawlerDict = mainDOIsoupFirst(DOI)
         # if doi is not valid, mainDOIsoupFirst() returns {}
         if len(crawlerDict) == 0:
+            with open('doi.pkl', 'wb') as f:
+                pickle.dump(rollback, f)
             return None
         # transfer the newdoiDict to an xml element
         tree = dict2element(crawlerDict, myXSDtree) # an xml element
@@ -162,7 +166,7 @@ def generateID(doiDict, SID):
     PubYearRaw = doiDict['metadata'].find('.//PublicationYear')
     if PubYearRaw is not None:
         PubYear = PubYearRaw.text
-    return '_'.join(['L'+str(PID), SID, LastName, PubYear])
+    return '_'.join([str(PID), SID, LastName, PubYear])
 
 # convert DOI crawler dict into an xml element
 def dict2element(crawlerDict, myXSDtree):
@@ -208,8 +212,8 @@ def dict2element(crawlerDict, myXSDtree):
 
 if __name__ == '__main__':
     # read the xsd tree
-    # xsdDir = "./PNC_schema_060718.xsd"
-    xsdDir = './'+sys.argv[2]
+    xsdDir = "./PNC_schema_060718.xsd"
+    # xsdDir = './'+sys.argv[2]
     myXSDtree = ET.parse(xsdDir)
     xlsxName = './'+sys.argv[1] # sys.argv[1] command line action
     extractID(xlsxName, myXSDtree)
