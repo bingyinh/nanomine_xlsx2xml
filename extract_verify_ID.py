@@ -212,8 +212,8 @@ def dict2element(crawlerDict, myXSDtree):
 
 if __name__ == '__main__':
     # read the xsd tree
-    xsdDir = "./PNC_schema_060718.xsd"
-    # xsdDir = './'+sys.argv[2]
+    # xsdDir = "./PNC_schema_060718.xsd"
+    xsdDir = './'+sys.argv[2]
     myXSDtree = ET.parse(xsdDir)
     xlsxName = './'+sys.argv[1] # sys.argv[1] command line action
     extractID(xlsxName, myXSDtree)
