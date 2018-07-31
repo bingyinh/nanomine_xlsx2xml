@@ -198,6 +198,7 @@ def sortSequence(myList, myClassName, myXSDtree):
              'Linear Elastic':'LinearElasticType',# tempFracture;prevTempFrac
              'Plastic Elastic':'PlasticElasticType',# tempFracture;prevTempFrac
              'Impact':'ImpactEnergyType',# temp;prevTemp
+             'Hardness': 'HardnessType',# temp;prevTemp
              'Viscoelastic':'ViscoelasticType',# temp_list;'Viscoelastic'
              'Dynamic properties':'DMAType',# temp;prevTemp
              'Frequency sweep':'DMAFrequencyType',# DMA_Test;prevDMA
@@ -214,6 +215,8 @@ def sortSequence(myList, myClassName, myXSDtree):
              'Crystallinity':'CrystallizationType', # temp;prevTemp
              'Volumetric':'VolumetricType', # temp_list;'Volumetric'
              'Rheological':'RheologicalType', # temp_list;'Rheological'
+             'Complex Modulus':'RheologicalPropertiesType', # temp;prevTemp
+             'Viscosity':'ViscosityType', # temp;prevTemp
              'MICROSTRUCTURE':'MicrostructureDescriptorsType', # temp_list;'MICROSTRUCTURE'
              'Imagefile':'ImageFileType', # temp;prevTemp
              'Dimension':'ImageSizeType', # Dimension;'Dimension'
@@ -287,6 +290,62 @@ def addKVU(key, description, value, unit, unc_type, unc_value,
         small_dict_unc['value'] = unc_value
     if len(small_dict_unc) > 1:# if both unc_type and unc_value present, save them
         small_dict['uncertainty'] = small_dict_unc
+    if len(str(data_file)) > 0:
+        if len(str(data_des)) > 0:
+            small_list_data.append({'description': data_des})
+        small_list_data.append({'data': read_excel_profile(data_file)})
+    if len(small_list_data) > 0:
+        # read the header and extract the axis labels and units
+        # 'data' dict always the last in small_list_data
+        small_dict_axis = axisInfo(small_list_data[-1]['data'])
+        if len(small_dict_axis) > 0:
+            small_list_data.append({'AxisLabel': small_dict_axis})
+        # sort small_list_data
+        small_list_data = sortSequence(small_list_data, 'Distribution', myXSDtree)
+        small_dict['data'] = small_list_data
+    # store small_dict into dict_in
+    if len(small_dict) > 0:
+        dict_in[key] = small_dict
+    return dict_in
+
+# a helper method that also takes standard deviation on the top of the addKVU
+# method.
+def addKVSU(key, description, value, unit, unc_type, unc_value, stdDev,
+            data_des, data_file, dict_in):
+    # first strip all the input
+    if (type(value) == str or type(value) == unicode):
+        value = value.strip()
+    if (type(unit) == str or type(unit) == unicode):
+        unit = unit.strip()
+    if (type(unc_type) == str or type(unc_type) == unicode):
+        unc_type = unc_type.strip()
+    if (type(stdDev) == str or type(stdDev) == unicode):
+        stdDev = stdDev.strip()
+    if (type(description) == str or type(description) == unicode):
+        description = description.strip()
+    if (type(data_des) == str or type(data_des) == unicode):
+        data_des = data_des.strip()
+    if (type(data_file) == str or type(data_file) == unicode):
+        data_file = data_file.strip()
+    # create 4 internal dicts
+    small_dict = collections.OrderedDict()
+    small_dict_unc = collections.OrderedDict()
+    small_list_data = []
+    small_dict_axis = collections.OrderedDict()
+    if len(str(description)) > 0:
+        small_dict['description'] = description
+    if len(str(value)) > 0:
+        small_dict['value'] = value
+    if len(str(unit)) > 0:
+        small_dict['unit'] = unit
+    if len(str(unc_type)) > 0:
+        small_dict_unc['type'] = unc_type
+    if len(str(unc_value)) > 0:
+        small_dict_unc['value'] = unc_value
+    if len(small_dict_unc) > 1:# if both unc_type and unc_value present, save them
+        small_dict['uncertainty'] = small_dict_unc
+    if len(str(stdDev)) > 0:
+        small_dict['standardDeviation'] = stdDev
     if len(str(data_file)) > 0:
         if len(str(data_des)) > 0:
             small_list_data.append({'description': data_des})
@@ -453,6 +512,8 @@ def sheetSampleInfo(sheet, DATA, myXSDtree):
             LabGenerated = insert('DateOfSampleMade', sheet.row_values(row)[1], LabGenerated)
         elif match(sheet.row_values(row)[0], 'Date of Data Measurement'):
             LabGenerated = insert('DateOfMeasurement', sheet.row_values(row)[1], LabGenerated)
+        elif match(sheet.row_values(row)[0], 'Related DOI'):
+            LabGenerated = insert('relatedDOI', sheet.row_values(row)[1], LabGenerated)
     # # end of reading rows, call DOI retriever and log changes
     # if len(DOI) > 0:
 
@@ -675,16 +736,23 @@ def sheetMatType(sheet, DATA, myXSDtree):
         if match(sheet.cell_value(row, 0), 'Particle diameter'):
             parS = collections.OrderedDict()
             myRow = sheet.row_values(row) # save the list of row_values
-            parS = addKVU('SphericalParticleDiameter', myRow[1], myRow[2], myRow[3], '', '', '', '', parS)
+            parS = addKVSU('SphericalParticleDiameter', myRow[1], myRow[2], myRow[3], '', '', myRow[4], '', '', parS)
             if len(parS) > 0:
                 FillerComponent.append(parS)
-            # FillerComponent/SpecificSurfaceArea
+            # FillerComponent/SurfaceArea/specific
         if match(sheet.cell_value(row, 0), 'Specific surface area'):
             speS = collections.OrderedDict()
             myRow = sheet.row_values(row) # save the list of row_values
-            speS = addKVU('SpecificSurfaceArea', myRow[1], myRow[2], '', '', '', '', '', speS)
+            speS = addKVU('specific', myRow[1], myRow[2], myRow[3], '', '', '', '', speS)
             if len(speS) > 0:
-                FillerComponent.append(speS)
+                FillerComponent.append({'SurfaceArea': speS})
+            # FillerComponent/SurfaceArea/total
+        if match(sheet.cell_value(row, 0), 'Total surface area'):
+            totS = collections.OrderedDict()
+            myRow = sheet.row_values(row) # save the list of row_values
+            totS = addKVU('total', myRow[1], myRow[2], myRow[3], '', '', '', '', totS)
+            if len(totS) > 0:
+                FillerComponent.append({'SurfaceArea': totS})
             # FillerComponent/ParticleAspectRatio
         if match(sheet.cell_value(row, 0), 'Aspect ratio'):
             aspR = collections.OrderedDict()
@@ -1714,7 +1782,8 @@ def sheetCharMeth(sheet, DATA, myXSDtree):
 def sheetPropMech(sheet, DATA_PROP, myXSDtree):
     headers = {'Tensile': 'Tensile', 'Flexural': 'Flexural',
                'Compression': 'Compression', 'Shear': 'Shear',
-               'Fracture': 'FractureToughness', 'Impact': 'Impact'}
+               'Fracture': 'FractureToughness', 'Impact': 'Impact',
+               'Hardness': 'Hardness'}
     headers_fracture = {'Essential work of fracture (EWF)': 'EssentialWorkOfFracture',
                         'Linear Elastic': 'LinearElastic',
                         'Plastic Elastic': 'PlasticElastic'}
@@ -1809,6 +1878,15 @@ def sheetPropMech(sheet, DATA_PROP, myXSDtree):
             tenY = addKVU('TensileStressAtYield', myRow[1], myRow[2], myRow[3], myRow[4], myRow[5], '', myRow[6], tenY)
             if len(tenY) > 0:
                 temp.append(tenY)
+            # TensileToughness
+        if match(sheet.cell_value(row, 0), 'Tensile toughness'):
+            tenT = collections.OrderedDict()
+            myRow = sheet.row_values(row) # save the list of row_values
+            while len(myRow) < 7:
+                myRow.append(unicode('')) # prevent IndexError
+            tenT = addKVU('TensileToughness', myRow[1], myRow[2], myRow[3], myRow[4], myRow[5], '', myRow[6], tenT)
+            if len(tenT) > 0:
+                temp.append(tenT)
             # ElongationAtBreak
         if match(sheet.cell_value(row, 0), 'Elongation at break'):
             eloB = collections.OrderedDict()
@@ -1885,6 +1963,15 @@ def sheetPropMech(sheet, DATA_PROP, myXSDtree):
             fleY = addKVU('FlexuralStressAtYield', myRow[1], myRow[2], myRow[3], myRow[4], myRow[5], '', myRow[6], fleY)
             if len(fleY) > 0:
                 temp.append(fleY)
+            # FlexuralToughness
+        if match(sheet.cell_value(row, 0), 'Flexural toughness'):
+            fleT = collections.OrderedDict()
+            myRow = sheet.row_values(row) # save the list of row_values
+            while len(myRow) < 7:
+                myRow.append(unicode('')) # prevent IndexError
+            fleT = addKVU('FlexuralToughness', myRow[1], myRow[2], myRow[3], myRow[4], myRow[5], '', myRow[6], fleT)
+            if len(fleT) > 0:
+                temp.append(fleT)
         # Compression
             # CompressionModulus
         if match(sheet.cell_value(row, 0), 'Compression modulus'):
@@ -1913,6 +2000,15 @@ def sheetPropMech(sheet, DATA_PROP, myXSDtree):
             comY = addKVU('CompressionStressAtYield', myRow[1], myRow[2], myRow[3], myRow[4], myRow[5], '', myRow[6], comY)
             if len(comY) > 0:
                 temp.append(comY)
+            # CompressiveToughness
+        if match(sheet.cell_value(row, 0), 'Compressive toughness'):
+            comT = collections.OrderedDict()
+            myRow = sheet.row_values(row) # save the list of row_values
+            while len(myRow) < 7:
+                myRow.append(unicode('')) # prevent IndexError
+            comT = addKVU('CompressiveToughness', myRow[1], myRow[2], myRow[3], myRow[4], myRow[5], '', myRow[6], comT)
+            if len(comT) > 0:
+                temp.append(comT)
         # Shear
             # ShearModulus
         if match(sheet.cell_value(row, 0), 'Shear modulus'):
@@ -1994,6 +2090,15 @@ def sheetPropMech(sheet, DATA_PROP, myXSDtree):
             chaI = addKVU('CharpyImpactEnergy', myRow[1], myRow[2], myRow[3], myRow[4], myRow[5], '', myRow[6], chaI)
             if len(chaI) > 0:
                 temp.append(chaI)
+            # ImpactToughness
+        if match(sheet.cell_value(row, 0), 'Impact toughness'):
+            impT = collections.OrderedDict()
+            myRow = sheet.row_values(row) # save the list of row_values
+            while len(myRow) < 7:
+                myRow.append(unicode('')) # prevent IndexError
+            impT = addKVU('ImpactToughness', myRow[1], myRow[2], myRow[3], myRow[4], myRow[5], '', myRow[6], impT)
+            if len(impT) > 0:
+                temp.append(impT)                
         # SHARED PROPERTIES
         # Conditions
             # StrainRate
@@ -2014,13 +2119,29 @@ def sheetPropMech(sheet, DATA_PROP, myXSDtree):
             conP = addKVU('PreLoad', myRow[1], myRow[2], myRow[3], myRow[4], myRow[5], '', myRow[6], conP)
             if len(conP) > 0:
                 Conditions.append(conP)
-        # LoadingProfile
+            # LoadingProfile
         if match(sheet.cell_value(row, 0), 'Loading Profile (filename.xlsx)'):
             if len(str(sheet.cell_value(row, 1))) > 0:
                 LP = collections.OrderedDict()
                 LP = addKVU('DeleteMe', '', '', '', '', '', '', sheet.cell_value(row, 1), LP)
                 if len(LP) > 0 and 'DeleteMe' in LP.keys() and 'data' in LP['DeleteMe'].keys():
                     LoadingProfile.append(LP['DeleteMe']['data'])
+        # Hardness
+            # HardnessTestStandard
+        if match(sheet.cell_value(row, 0), 'Test standard'):
+            temp = insert('HardnessTestStandard', sheet.cell_value(row, 1), temp)
+            # HardnessScale
+        if match(sheet.cell_value(row, 0), 'Scale'):
+            temp = insert('HardnessScale', sheet.cell_value(row, 1), temp)
+            # HardnessValue
+        if match(sheet.cell_value(row, 0), 'Hardness value'):
+            harV = collections.OrderedDict()
+            myRow = sheet.row_values(row) # save the list of row_values
+            while len(myRow) < 7:
+                myRow.append(unicode('')) # prevent IndexError
+            harV = addKVU('HardnessValue', myRow[1], myRow[2], myRow[3], myRow[4], myRow[5], '', myRow[6], harV)
+            if len(harV) > 0:
+                temp.append(harV)   
     # END OF THE LOOP
     # based on the flag
     if underFrac:
@@ -2140,7 +2261,7 @@ def sheetPropVisc(sheet, DATA_PROP, myXSDtree):
             myRow = sheet.row_values(row) # save the list of row_values
             while len(myRow) < 7:
                 myRow.append(unicode('')) # prevent IndexError
-            temP = addKVU('temperature', '', myRow[2], myRow[3], myRow[4], myRow[5], '', myRow[6], temP)
+            temP = addKVU('temperature', myRow[1], myRow[2], myRow[3], myRow[4], myRow[5], '', myRow[6], temP)
             if len(temP) > 0:
                 DMA_Test.append(temP)
         # DynamicProperties/DMA_mode/.../condition/strainAmplitude
@@ -2639,7 +2760,7 @@ def sheetPropTher(sheet, DATA_PROP, myXSDtree):
             myRow = sheet.row_values(row) # save the list of row_values
             while len(myRow) < 7:
                 myRow.append(unicode('')) # prevent IndexError
-            cryT = addKVU('CrystalizationTemperature', '',
+            cryT = addKVU('CrystalizationTemperature', myRow[1],
                           myRow[2], myRow[3], myRow[4], myRow[5],
                           '', myRow[6], cryT)
             if len(cryT) > 0:
@@ -2672,7 +2793,7 @@ def sheetPropTher(sheet, DATA_PROP, myXSDtree):
             myRow = sheet.row_values(row) # save the list of row_values
             while len(myRow) < 7:
                 myRow.append(unicode('')) # prevent IndexError
-            theT = addKVU('ThermalDecompositionTemperature', '',
+            theT = addKVU('ThermalDecompositionTemperature', myRow[1],
                           myRow[2], myRow[3], myRow[4], myRow[5],
                           '', myRow[6], theT)
             if len(theT) > 0:
@@ -2683,7 +2804,7 @@ def sheetPropTher(sheet, DATA_PROP, myXSDtree):
             myRow = sheet.row_values(row) # save the list of row_values
             while len(myRow) < 7:
                 myRow.append(unicode('')) # prevent IndexError
-            glaT = addKVU('GlassTransitionTemperature', '',
+            glaT = addKVU('GlassTransitionTemperature', myRow[1],
                           myRow[2], myRow[3], myRow[4], myRow[5],
                           '', myRow[6], glaT)
             if len(glaT) > 0:
@@ -2694,7 +2815,7 @@ def sheetPropTher(sheet, DATA_PROP, myXSDtree):
             myRow = sheet.row_values(row) # save the list of row_values
             while len(myRow) < 7:
                 myRow.append(unicode('')) # prevent IndexError
-            lcpT = addKVU('LC_PhaseTransitionTemperature', '',
+            lcpT = addKVU('LC_PhaseTransitionTemperature', myRow[1],
                           myRow[2], myRow[3], myRow[4], myRow[5],
                           '', myRow[6], lcpT)
             if len(lcpT) > 0:
@@ -2705,7 +2826,7 @@ def sheetPropTher(sheet, DATA_PROP, myXSDtree):
             myRow = sheet.row_values(row) # save the list of row_values
             while len(myRow) < 7:
                 myRow.append(unicode('')) # prevent IndexError
-            melT = addKVU('MeltingTemperature', '',
+            melT = addKVU('MeltingTemperature', myRow[1],
                           myRow[2], myRow[3], myRow[4], myRow[5],
                           '', myRow[6], melT)
             if len(melT) > 0:
@@ -2760,7 +2881,7 @@ def sheetPropTher(sheet, DATA_PROP, myXSDtree):
             myRow = sheet.row_values(row) # save the list of row_values
             while len(myRow) < 7:
                 myRow.append(unicode('')) # prevent IndexError
-            briT = addKVU('BrittleTemperature', '',
+            briT = addKVU('BrittleTemperature', myRow[1],
                           myRow[2], myRow[3], myRow[4], myRow[5],
                           '', myRow[6], briT)
             if len(briT) > 0:
@@ -2896,17 +3017,114 @@ def sheetPropVolu(sheet, DATA_PROP, myXSDtree):
 
 # Sheet 5. Properties addressed - Rheological
 def sheetPropRheo(sheet, DATA_PROP, myXSDtree):
-    headers = {'Dynamic viscosity': 'DynamicViscosity',
-               'Melt viscosity': 'MeltViscosity'}
+    headers = {'Complex Modulus': 'RheologicalComplexModulus',
+               'Viscosity': 'RheologicalViscosity'}
+    headers_DMA = {'Frequency sweep': 'FrequencySweep',
+                   'Temperature sweep': 'TemperatureSweep',
+                   'Strain sweep': 'StrainSweep'}           
     temp_list = [] # the highest level list for PROPERTIES/Rheological
-    prevTemp = '' # save the previous cleanTemp
+    temp = [] # always save temp if not empty when we find a match in headers
+    DMA_Test = [] # a list for Rheological/.../RheometerMode/.../condition
+    prevTemp = '' # save the previous cleanTemp, "Complex Modulus" or "Viscosity"
+    prevDMA = '' # save the previous cleanDMA, "Frequency sweep", "Temperature sweep" or "Strain sweep"
     for row in xrange(sheet.nrows):
+        # First deal with the DMA_Test
+        if matchList(sheet.cell_value(row, 0), headers.keys()):
+            if len(DMA_Test) > 0 and len(prevDMA) > 0: # update DMA_Test if it's not empty and user has selected DMA_mode
+                # sort DMA_Test
+                DMA_Test = sortSequence(DMA_Test, prevDMA, myXSDtree)
+                temp.append({'RheometerMode': {headers_DMA[prevDMA]: {'condition': DMA_Test}}})
+                DMA_Test = []
+                prevDMA = ''
+        # Then deal with higher level headers
         cleanTemp = matchList(sheet.cell_value(row, 0), headers.keys())
         if cleanTemp:
             if len(prevTemp) == 0: # initialize prevTemp
                 prevTemp = cleanTemp
+            # save temp
+            if len(temp) > 0: # update temp if it's not empty
+                # sort temp
+                temp = sortSequence(temp, prevTemp, myXSDtree)
+                temp_list.append({headers[prevTemp]: temp})
+                temp = []
             prevTemp = cleanTemp # update prevTemp
-        # DynamicViscosity
+        # .../RheometerMode
+        if match(sheet.cell_value(row, 0), 'Rheometer mode'):
+            if len(str(sheet.cell_value(row, 1))) > 0:
+                prevDMA = sheet.cell_value(row, 1).strip() # update prevDMA
+        # .../RheometerMode/.../condition/temperature
+        if match(sheet.cell_value(row, 0), 'Temperature'):
+            temP = collections.OrderedDict()
+            myRow = sheet.row_values(row) # save the list of row_values
+            while len(myRow) < 7:
+                myRow.append(unicode('')) # prevent IndexError
+            temP = addKVU('temperature', myRow[1], myRow[2], myRow[3], myRow[4], myRow[5], '', myRow[6], temP)
+            if len(temP) > 0:
+                DMA_Test.append(temP)
+        # .../RheometerMode/.../condition/strainAmplitude
+        if match(sheet.cell_value(row, 0), 'Strain amplitude'):
+            strR = collections.OrderedDict()
+            myRow = sheet.row_values(row) # save the list of row_values
+            while len(myRow) < 7:
+                myRow.append(unicode('')) # prevent IndexError
+            strR = addKVU('strainAmplitude', myRow[1], myRow[2], myRow[3], myRow[4], myRow[5], '', myRow[6], strR)
+            if len(strR) > 0:
+                DMA_Test.append(strR)
+        # .../RheometerMode/.../condition/frequency
+        if match(sheet.cell_value(row, 0), 'Frequency'):
+            freQ = collections.OrderedDict()
+            myRow = sheet.row_values(row) # save the list of row_values
+            while len(myRow) < 7:
+                myRow.append(unicode('')) # prevent IndexError
+            freQ = addKVU('frequency', myRow[1], myRow[2], myRow[3], myRow[4], myRow[5], '', myRow[6], freQ)
+            if len(freQ) > 0:
+                DMA_Test.append(freQ)
+        # RheologicalComplexModulus/RheologicalStorageModulus
+        if match(sheet.cell_value(row, 0), "Rheological G' Datafile.xlsx"):
+            rheS = collections.OrderedDict()
+            myRow = sheet.row_values(row) # save the list of row_values
+            while len(myRow) < 7:
+                myRow.append(unicode('')) # prevent IndexError
+            rheS = addKVU('RheologicalStorageModulus',
+                          '', '', '', '', '', myRow[1], myRow[2], rheS)
+            if len(rheS) > 0:
+                temp.append(rheS)
+        # RheologicalComplexModulus/RheologicalLossModulus
+        if match(sheet.cell_value(row, 0), "Rheological G'' Datafile.xlsx"):
+            rheL = collections.OrderedDict()
+            myRow = sheet.row_values(row) # save the list of row_values
+            while len(myRow) < 7:
+                myRow.append(unicode('')) # prevent IndexError
+            rheL = addKVU('RheologicalLossModulus',
+                          '', '', '', '', '', myRow[1], myRow[2], rheL)
+            if len(rheL) > 0:
+                temp.append(rheL)
+        # RheologicalComplexModulus/RheologicalLossTangent
+        if match(sheet.cell_value(row, 0), 'Rheological tan_delta Datafile.xlsx'):
+            rheT = collections.OrderedDict()
+            myRow = sheet.row_values(row) # save the list of row_values
+            while len(myRow) < 7:
+                myRow.append(unicode('')) # prevent IndexError
+            rheT = addKVU('RheologicalLossTangent',
+                          '', '', '', '', '', myRow[1], myRow[2], rheT)
+            if len(rheT) > 0:
+                temp.append(rheT)
+        # RheologicalComplexModulus/RheologicalMasterCurve
+        if match(sheet.cell_value(row, 0), 'Master Curve.xlsx'):
+            masC = collections.OrderedDict()
+            masC_list = collections.OrderedDict()
+            myRow = sheet.row_values(row) # save the list of row_values
+            if len(str(myRow[1]).strip()) > 0:
+                masC['description'] = myRow[1]
+            if (type(myRow[2]) == str or type(myRow[2]) == unicode) and len(myRow[2]) > 0:
+                masC['data'] = read_excel_profile(myRow[2])
+                small_dict_axis = axisInfo(masC['data'])
+                if len(small_dict_axis) > 0:
+                    masC['AxisLabel'] = small_dict_axis
+            if len(masC) > 0:
+                masC_list['MasterCurve'] = masC
+                temp.append(masC_list)
+        # RheologicalViscosity/DynamicViscosity
         if match(sheet.cell_value(row, 0), 'Dynamic viscosity'):
             dynV = collections.OrderedDict()
             myRow = sheet.row_values(row) # save the list of row_values
@@ -2916,8 +3134,8 @@ def sheetPropRheo(sheet, DATA_PROP, myXSDtree):
                           myRow[2], myRow[3], myRow[4], myRow[5],
                           '', myRow[6], dynV)
             if len(dynV) > 0:
-                temp_list.append(dynV) # directly append to the higher level list
-        # MeltViscosity            
+                temp.append(dynV)
+        # RheologicalViscosity/MeltViscosity            
         if match(sheet.cell_value(row, 0), 'Melt viscosity'):
             melV = collections.OrderedDict()
             myRow = sheet.row_values(row) # save the list of row_values
@@ -2927,8 +3145,21 @@ def sheetPropRheo(sheet, DATA_PROP, myXSDtree):
                           myRow[2], myRow[3], myRow[4], myRow[5],
                           '', myRow[6], melV)
             if len(melV) > 0:
-                temp_list.append(melV) # directly append to the higher level list
+                temp.append(melV)
     # END OF THE LOOP
+    # save DMA_Test if it's not empty and user has selected DMA_mode
+    if len(DMA_Test) > 0 and len(prevDMA) > 0:
+        # sort DMA_Test
+        DMA_Test = sortSequence(DMA_Test, prevDMA, myXSDtree)
+        temp.append({'RheometerMode': {headers_DMA[prevDMA]: {'condition': DMA_Test}}})
+        DMA_Test = []
+    # don't forget about the last temp
+    # save temp
+    if len(temp) > 0: # update temp if it's not empty
+        # sort temp
+        temp = sortSequence(temp, prevTemp, myXSDtree)
+        temp_list.append({headers[prevTemp]: temp})
+        temp = []
     if len(temp_list) > 0:
         # sort temp_list
         temp_list = sortSequence(temp_list, 'Rheological', myXSDtree)
@@ -3054,7 +3285,7 @@ def sheetMicrostructure(sheet, DATA, myXSDtree):
 if __name__ == '__main__':
     ## Global variable myXSDtree
     # read the xsd tree
-    # xsdDir = "./PNC_schema_060718.xsd"
+    # xsdDir = "./PNC_schema_072618.xsd"
     xsdDir = './'+sys.argv[2]
     myXSDtree = ET.parse(xsdDir)
     # DATA containers
