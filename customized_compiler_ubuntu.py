@@ -2301,10 +2301,12 @@ def sheetPropVisc(sheet, DATA_PROP, myXSDtree):
             if len(str(myRow[1]).strip()) > 0:
                 masC['description'] = myRow[1]
             if (type(myRow[2]) == str or type(myRow[2]) == unicode) and len(myRow[2]) > 0:
-                masC['data'] = read_excel_profile(myRow[2])
-                small_dict_axis = axisInfo(masC['data'])
+                data = read_excel_profile(myRow[2])
+                small_dict_axis = axisInfo(data)
                 if len(small_dict_axis) > 0:
                     masC['AxisLabel'] = small_dict_axis
+                if len(data) > 0:
+                    masC['data'] = data
             if len(masC) > 0:
                 masC_list['MasterCurve'] = masC
                 temp.append(masC_list)
@@ -3117,12 +3119,14 @@ def sheetPropRheo(sheet, DATA_PROP, myXSDtree):
             if len(str(myRow[1]).strip()) > 0:
                 masC['description'] = myRow[1]
             if (type(myRow[2]) == str or type(myRow[2]) == unicode) and len(myRow[2]) > 0:
-                masC['data'] = read_excel_profile(myRow[2])
-                small_dict_axis = axisInfo(masC['data'])
+                data = read_excel_profile(myRow[2])
+                small_dict_axis = axisInfo(data)
                 if len(small_dict_axis) > 0:
                     masC['AxisLabel'] = small_dict_axis
+                if len(data) > 0:
+                    masC['data'] = data
             if len(masC) > 0:
-                masC_list['MasterCurve'] = masC
+                masC_list['RheologicalMasterCurve'] = masC
                 temp.append(masC_list)
         # RheologicalViscosity/DynamicViscosity
         if match(sheet.cell_value(row, 0), 'Dynamic viscosity'):
