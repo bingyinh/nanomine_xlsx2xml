@@ -3351,8 +3351,8 @@ if __name__ == '__main__':
     tree = ET.ElementTree()
     root = ET.fromstring(diffusionDataxml)
     tree._setroot(root)
-    # if DOI exists, substitute the Citation element
-    if len(DOI) > 0:
+    # if DOI exists (excludes special issue madeup DOI), substitute the Citation element
+    if len(DOI) > 0 and 'ma-SI' not in DOI:
         with open('doi.pkl', 'rb') as f:
             alldoiDict = pickle.load(f)
         citationEle = alldoiDict[DOI]['metadata']

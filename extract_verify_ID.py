@@ -10,6 +10,7 @@ import xml.etree.ElementTree as ET
 import dicttoxml
 import collections
 import copy
+import datetime
 
 # a helper method to find a blurry match regardless of # signs between two
 # strings, testant is the standard expression
@@ -85,7 +86,7 @@ def extractID(xlsxName, myXSDtree):
     message = ''
     if sheet_sample == '':
         message += '[Excel Error] Excel template format error: Sample_Info sheet not found.\n'
-        with open('./ID.txt', 'w') as fid:
+        with open('./error_message.txt', 'a') as fid:
             fid.write(message)
         return
     # otherwise, find and save the ID in ./ID.txt
@@ -111,8 +112,14 @@ def extractID(xlsxName, myXSDtree):
             with open('./error_message.txt', 'a') as fid:
                 fid.write('[DOI Error] Please check the reported DOI, it seems that DOI does not exist.\n')
             return
+        # special case, special issue made-up DOI, format: ma-SI-LastName
+        if 'ma-SI' in DOI:
+            LastName = DOI.split('-')[-1]
+            CurrentYear = str(datetime.datetime.now().year)
+            newID = '_'.join([str(localdoiDict['paperID']), ID_raw, LastName, CurrentYear])
+        else:
         # generate ID here
-        newID = generateID(localdoiDict, ID_raw)
+            newID = generateID(localdoiDict, ID_raw)
         # write the ID in ./ID.txt
         with open('./ID.txt', 'w') as fid:
             fid.write(newID)
@@ -137,6 +144,9 @@ def localDOI(DOI, myXSDtree):
         alldoiDict[DOI] = {'paperID':PID}
         with open('doi.pkl', 'wb') as f:
             pickle.dump(alldoiDict, f)
+        # special case, special issue madeup DOI
+        if 'ma-SI' in DOI:
+            return alldoiDict[DOI]
         # now fetch the metadata using doi-crawler and save to alldoiDict, doi.pkl
         crawlerDict = mainDOIsoupFirst(DOI)
         # if doi is not valid, mainDOIsoupFirst() returns {}
@@ -212,7 +222,7 @@ def dict2element(crawlerDict, myXSDtree):
 
 if __name__ == '__main__':
     # read the xsd tree
-    # xsdDir = "./PNC_schema_060718.xsd"
+    # xsdDir = "./PNC_schema_072618.xsd"
     xsdDir = './'+sys.argv[2]
     myXSDtree = ET.parse(xsdDir)
     xlsxName = './'+sys.argv[1] # sys.argv[1] command line action
