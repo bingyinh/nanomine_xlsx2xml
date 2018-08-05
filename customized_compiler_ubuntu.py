@@ -3176,7 +3176,7 @@ def sheetMicrostructure(sheet, DATA, myXSDtree):
     wdir_file = './workingdir.str'
     with open(wdir_file) as _wdf:
         wdir_str = _wdf.read()
-    pidsid = wdir_str.split('/')[-3] + '/' + wdir_str.split('/')[-2]
+    pidsid = wdir_str.split('/')[-4] + '/' + wdir_str.split('/')[-3]
     
     headers = {'Imagefile': 'ImageFile',
                'Sample experimental info': 'Experimental_Sample_Info'}
