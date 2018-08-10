@@ -89,6 +89,27 @@ def extractID(xlsxName, myXSDtree):
         with open('./error_message.txt', 'a') as fid:
             fid.write(message)
         return
+    # special case for experimental data
+    lab = False
+    for row in xrange(sheet_sample.nrows):
+        if match(sheet_sample.row_values(row)[0], 'Sample ID'):
+            ID_raw = str(sheet_sample.row_values(row)[1])
+            # if no ID is entered in the cell
+            if len(ID_raw.strip()) == 0:
+                message += '[Excel Error] Excel template value error: Sample ID is not entered in the uploaded Excel template.\n'
+        if match(sheet_sample.row_values(row)[0], 'Citation Type'):
+            if sheet_sample.row_values(row)[1] == 'lab-generated':
+                lab = True
+    if lab:
+        if message != '':
+            # write the message in ./error_message.txt
+            with open('./error_message.txt', 'a') as fid:
+                fid.write(message)
+        else:
+            # write the ID in ./ID.txt
+            with open('./ID.txt', 'w') as fid:
+                fid.write(ID_raw.strip())
+        return
     # otherwise, find and save the ID in ./ID.txt
     for row in xrange(sheet_sample.nrows):
         # ID
