@@ -7,6 +7,7 @@ import glob, os                           # Python standard library
 import sys                                # Python standard library
 import copy                               # Python standard library
 from time import gmtime, strftime         # Python standard library
+import datetime
 
 # -------------------------------------------- convert .XLSX to .XML files
 import xlrd
@@ -509,9 +510,15 @@ def sheetSampleInfo(sheet, DATA, myXSDtree):
 
         # lab generated 
         elif match(sheet.row_values(row)[0], 'Date of Sample Made'):
-            LabGenerated = insert('DateOfSampleMade', sheet.row_values(row)[1], LabGenerated)
+            if len(str(sheet.row_values(row)[1])) > 0 and str(sheet.row_values(row)[1]).replace('.','',1).isdigit():
+                timetuple = xlrd.xldate_as_tuple(sheet.row_values(row)[1], 0)
+                realDate = datetime.datetime(*timetuple).strftime('%m/%d/%Y')
+                LabGenerated = insert('DateOfSampleMade', realDate, LabGenerated)
         elif match(sheet.row_values(row)[0], 'Date of Data Measurement'):
-            LabGenerated = insert('DateOfMeasurement', sheet.row_values(row)[1], LabGenerated)
+            if len(str(sheet.row_values(row)[1])) > 0 and str(sheet.row_values(row)[1]).replace('.','',1).isdigit():
+                timetuple = xlrd.xldate_as_tuple(sheet.row_values(row)[1], 0)
+                realDate = datetime.datetime(*timetuple).strftime('%m/%d/%Y')
+                LabGenerated = insert('DateOfMeasurement', realDate, LabGenerated)
         elif match(sheet.row_values(row)[0], 'Related DOI'):
             LabGenerated = insert('relatedDOI', sheet.row_values(row)[1], LabGenerated)
     # # end of reading rows, call DOI retriever and log changes
