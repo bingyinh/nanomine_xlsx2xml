@@ -476,6 +476,9 @@ def sheetSampleInfo(sheet, DATA, myXSDtree):
         elif match(sheet.row_values(row)[0], 'Publication Type'):
             CommonFields = insert('CitationType', sheet.row_values(row)[1], CommonFields)
             
+        elif match(sheet.row_values(row)[0], 'Publication'):
+            CommonFields = insert('Publication', sheet.row_values(row)[1], CommonFields)
+            
         elif match(sheet.row_values(row)[0], 'Title'):
             CommonFields = insert('Title', sheet.row_values(row)[1], CommonFields)
             
