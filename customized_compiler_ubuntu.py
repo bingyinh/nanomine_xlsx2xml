@@ -236,9 +236,15 @@ def sortSequence(myList, myClassName, myXSDtree):
     myList.sort(key=lambda x: seq[x.keys()[0]])
     return myList
 
+# a helper method to check the length of a cell input
+def hasLen(val):
+    if (type(val) == unicode and len(val.strip()) > 0) or len(str(val).strip()) > 0:
+        return True
+    return False
+
 # a helper method to insert a dict with {key: val} into a list
 def insert(key, val, container):
-    if len(str(val).strip()) > 0:
+    if hasLen(val):
         if (type(val) == str or type(val) == unicode):
             container.append({key: val.strip()})
             return container
@@ -249,7 +255,7 @@ def insert(key, val, container):
 
 # a helper method to add a {key: val} pair into the input dict
 def addKV(key, val, dict_in):
-    if len(str(val)) > 0:
+    if hasLen(val):
         if (type(val) == str or type(val) == unicode):
             dict_in[key] = val.strip()
             return dict_in
@@ -279,20 +285,20 @@ def addKVU(key, description, value, unit, unc_type, unc_value,
     small_dict_unc = collections.OrderedDict()
     small_list_data = []
     small_dict_axis = collections.OrderedDict()
-    if len(str(description)) > 0:
+    if hasLen(description):
         small_dict['description'] = description
-    if len(str(value)) > 0:
+    if hasLen(value):
         small_dict['value'] = value
-    if len(str(unit)) > 0:
+    if hasLen(unit):
         small_dict['unit'] = unit
-    if len(str(unc_type)) > 0:
+    if hasLen(unc_type):
         small_dict_unc['type'] = unc_type
-    if len(str(unc_value)) > 0:
+    if hasLen(unc_value):
         small_dict_unc['value'] = unc_value
     if len(small_dict_unc) > 1:# if both unc_type and unc_value present, save them
         small_dict['uncertainty'] = small_dict_unc
-    if len(str(data_file)) > 0:
-        if len(str(data_des)) > 0:
+    if hasLen(data_file):
+        if hasLen(data_des):
             small_list_data.append({'description': data_des})
         small_list_data.append({'data': read_excel_profile(data_file)})
     if len(small_list_data) > 0:
@@ -333,22 +339,22 @@ def addKVSU(key, description, value, unit, unc_type, unc_value, stdDev,
     small_dict_unc = collections.OrderedDict()
     small_list_data = []
     small_dict_axis = collections.OrderedDict()
-    if len(str(description)) > 0:
+    if hasLen(description):
         small_dict['description'] = description
-    if len(str(value)) > 0:
+    if hasLen(value):
         small_dict['value'] = value
-    if len(str(unit)) > 0:
+    if hasLen(unit):
         small_dict['unit'] = unit
-    if len(str(unc_type)) > 0:
+    if hasLen(unc_type):
         small_dict_unc['type'] = unc_type
-    if len(str(unc_value)) > 0:
+    if hasLen(unc_value):
         small_dict_unc['value'] = unc_value
     if len(small_dict_unc) > 1:# if both unc_type and unc_value present, save them
         small_dict['uncertainty'] = small_dict_unc
-    if len(str(stdDev)) > 0:
+    if hasLen(stdDev):
         small_dict['standardDeviation'] = stdDev
-    if len(str(data_file)) > 0:
-        if len(str(data_des)) > 0:
+    if hasLen(data_file):
+        if hasLen(data_des):
             small_list_data.append({'description': data_des})
         small_list_data.append({'data': read_excel_profile(data_file)})
     if len(small_list_data) > 0:
@@ -367,7 +373,7 @@ def addKVSU(key, description, value, unit, unc_type, unc_value, stdDev,
 
 # a helper method to add a value to a 2-level key-subkey dictionary
 def addKKV(key_1, key_2, val, dict_in):
-    if len(str(val)) > 0:
+    if hasLen(val):
         subdict = collections.OrderedDict()
         if type(val) == str or type(val) == unicode:
             subdict[key_2] = val.strip()
@@ -459,7 +465,7 @@ def sheetSampleInfo(sheet, DATA, myXSDtree):
         # Control_ID
         if match(sheet.row_values(row)[0], 'Control sample ID'):
             control = sheet.row_values(row)[1]
-            if len(str(control)) > 0:
+            if hasLen(control):
                 IDseg = ID.split('_')
                 IDseg[1] = control.strip()
                 assembledCtrl = '_'.join(IDseg)
@@ -513,12 +519,12 @@ def sheetSampleInfo(sheet, DATA, myXSDtree):
 
         # lab generated 
         elif match(sheet.row_values(row)[0], 'Date of Sample Made'):
-            if len(str(sheet.row_values(row)[1])) > 0 and str(sheet.row_values(row)[1]).replace('.','',1).isdigit():
+            if hasLen(sheet.row_values(row)[1]) and str(sheet.row_values(row)[1]).replace('.','',1).isdigit():
                 timetuple = xlrd.xldate_as_tuple(sheet.row_values(row)[1], 0)
                 realDate = datetime.datetime(*timetuple).strftime('%m/%d/%Y')
                 LabGenerated = insert('DateOfSampleMade', realDate, LabGenerated)
         elif match(sheet.row_values(row)[0], 'Date of Data Measurement'):
-            if len(str(sheet.row_values(row)[1])) > 0 and str(sheet.row_values(row)[1]).replace('.','',1).isdigit():
+            if hasLen(sheet.row_values(row)[1]) and str(sheet.row_values(row)[1]).replace('.','',1).isdigit():
                 timetuple = xlrd.xldate_as_tuple(sheet.row_values(row)[1], 0)
                 realDate = datetime.datetime(*timetuple).strftime('%m/%d/%Y')
                 LabGenerated = insert('DateOfMeasurement', realDate, LabGenerated)
@@ -852,7 +858,7 @@ def sheetMatType(sheet, DATA, myXSDtree):
         if match(sheet.cell_value(row, 0), 'PST Component Composition weight fraction'):
             mcc = collections.OrderedDict()
             myRow = sheet.row_values(row) # save the list of row_values
-            if len(str(myRow[1]).strip()) > 0:
+            if hasLen(myRow[1]):
                 mcc['Constituent'] = myRow[1]
             if type(myRow[2]) == float or len(myRow[2]) > 0:
                 mcc['Fraction'] = {'mass': myRow[2]}
@@ -861,7 +867,7 @@ def sheetMatType(sheet, DATA, myXSDtree):
         if match(sheet.cell_value(row, 0), 'PST Component Composition volumn fraction'):
             vcc = collections.OrderedDict()
             myRow = sheet.row_values(row) # save the list of row_values
-            if len(str(myRow[1]).strip()) > 0:
+            if hasLen(myRow[1]):
                 vcc['Constituent'] = myRow[1]
             if type(myRow[2]) == float or len(myRow[2]) > 0:
                 vcc['Fraction'] = {'volume': myRow[2]}
@@ -1743,7 +1749,7 @@ def sheetCharMeth(sheet, DATA, myXSDtree):
             myRow = sheet.row_values(row) # save the list of row_values
             while len(myRow) < 7:
                 myRow.append(unicode('')) # prevent IndexError
-            resD = addKVU('Data', myRow[1], myRow[2], myRow[3], myRow[4], myRow[5], '', myRow[6], resD)
+            resD = addKVU('data', myRow[1], myRow[2], myRow[3], myRow[4], myRow[5], '', myRow[6], resD)
             if len(resD) > 0:
                 temp.append(resD)
         # HeatingRate
@@ -2131,7 +2137,7 @@ def sheetPropMech(sheet, DATA_PROP, myXSDtree):
                 Conditions.append(conP)
             # LoadingProfile
         if match(sheet.cell_value(row, 0), 'Loading Profile (filename.xlsx)'):
-            if len(str(sheet.cell_value(row, 1))) > 0:
+            if hasLen(sheet.cell_value(row, 1)):
                 LP = collections.OrderedDict()
                 LP = addKVU('DeleteMe', '', '', '', '', '', '', sheet.cell_value(row, 1), LP)
                 if len(LP) > 0 and 'DeleteMe' in LP.keys() and 'data' in LP['DeleteMe'].keys():
@@ -2263,7 +2269,7 @@ def sheetPropVisc(sheet, DATA_PROP, myXSDtree):
             temp = insert('MeasurementMethod', sheet.cell_value(row, 1), temp)
         # DynamicProperties/DMA_mode
         if match(sheet.cell_value(row, 0), 'DMA mode'):
-            if len(str(sheet.cell_value(row, 1))) > 0:
+            if hasLen(sheet.cell_value(row, 1)):
                 prevDMA = sheet.cell_value(row, 1).strip() # update prevDMA
         # DynamicProperties/DMA_mode/.../condition/temperature
         if match(sheet.cell_value(row, 0), 'Temperature'):
@@ -2308,7 +2314,7 @@ def sheetPropVisc(sheet, DATA_PROP, myXSDtree):
             masC = collections.OrderedDict()
             masC_list = collections.OrderedDict()
             myRow = sheet.row_values(row) # save the list of row_values
-            if len(str(myRow[1]).strip()) > 0:
+            if hasLen(myRow[1]):
                 masC['description'] = myRow[1]
             if (type(myRow[2]) == str or type(myRow[2]) == unicode) and len(myRow[2]) > 0:
                 data = read_excel_profile(myRow[2])
@@ -3062,7 +3068,7 @@ def sheetPropRheo(sheet, DATA_PROP, myXSDtree):
             prevTemp = cleanTemp # update prevTemp
         # .../RheometerMode
         if match(sheet.cell_value(row, 0), 'Rheometer mode'):
-            if len(str(sheet.cell_value(row, 1))) > 0:
+            if hasLen(sheet.cell_value(row, 1)):
                 prevDMA = sheet.cell_value(row, 1).strip() # update prevDMA
         # .../RheometerMode/.../condition/temperature
         if match(sheet.cell_value(row, 0), 'Temperature'):
@@ -3126,7 +3132,7 @@ def sheetPropRheo(sheet, DATA_PROP, myXSDtree):
             masC = collections.OrderedDict()
             masC_list = collections.OrderedDict()
             myRow = sheet.row_values(row) # save the list of row_values
-            if len(str(myRow[1]).strip()) > 0:
+            if hasLen(myRow[1]):
                 masC['description'] = myRow[1]
             if (type(myRow[2]) == str or type(myRow[2]) == unicode) and len(myRow[2]) > 0:
                 data = read_excel_profile(myRow[2])
@@ -3217,7 +3223,7 @@ def sheetMicrostructure(sheet, DATA, myXSDtree):
             prevTemp = cleanTemp # update prevTemp
         # ImageFile/File
         if match(sheet.cell_value(row, 0), 'Microstructure filename'): #(!!!!!!!!!!!!!!!!!)
-            if len(str(sheet.cell_value(row, 1)).strip()) > 0:
+            if hasLen(sheet.cell_value(row, 1)):
                 filename = str(sheet.cell_value(row, 1)).strip()
                 if filename.split('.')[-1].lower() not in ['png', 'jpg', 'tif', 'tiff', 'gif']:
                     # write the message in ./error_message.txt
