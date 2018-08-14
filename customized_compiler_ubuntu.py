@@ -1077,9 +1077,13 @@ def sheetProcTypeHelper(sheet, row, temp_list, stop_sign, myXSDtree):
         # MixingMethod
         if match(sheet.cell_value(irow, 0), 'Mixing - method'):
             temp = insert('MixingMethod', sheet.cell_value(irow, 1), temp)
-        # ChemicalUsed (schema needs to be updated for Value Unit !!!!!!!!!!!)
+        # ChemicalUsed
         if match(sheet.cell_value(irow, 0), 'Mixing - chemical used'):
-            temp = insert('ChemicalUsed', sheet.cell_value(irow, 1), temp)
+            myRow = sheet.row_values(irow)
+            che = collections.OrderedDict()
+            che = addKVU('ChemicalUsed', myRow[1], myRow[2], myRow[3], '', '', '', '', che)
+            if len(che) > 0:
+                temp.append(che)
         # RPM
         if match(sheet.cell_value(irow, 0), 'Mixing - RPM'):
             rpm = collections.OrderedDict()
