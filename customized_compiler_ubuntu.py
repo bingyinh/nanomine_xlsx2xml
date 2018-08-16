@@ -170,6 +170,7 @@ def sortSequence(myList, myClassName, myXSDtree):
              'Drying/Evaporation':'GeneralConditionsType',# temp;prevTemp
              'Molding':'MoldingDescriptionType',# temp;prevTemp
              'MoldingInfo':'GeneralConditionsType',# MoldingInfo;'MoldingInfo'
+             'Curing':'GeneralConditionsType',# temp;prevTemp
              'CHARACTERIZATION':'MeasurementMethodsType',# temp_list;'CHARACTERIZATION'
              'Transmission electron microscopy':'SEMTEMtype',# temp;prevTemp
              'Scanning electron microscopy':'SEMTEMtype',# temp;prevTemp
@@ -1560,8 +1561,47 @@ def sheetProcTypeHelper(sheet, row, temp_list, stop_sign, myXSDtree):
         if match(sheet.cell_value(irow, 0), 'Molding - ambient condition'):
             MoldingInfo = insert('AmbientCondition', sheet.cell_value(irow, 1), MoldingInfo)
 
-    # Deposition and Coating (skipped)
-    # Self-Assembly (skipped)
+    # Curing
+        # Description
+        if match(sheet.cell_value(irow, 0), 'Curing - description'):
+            temp = insert('Description', sheet.cell_value(irow, 1), temp)
+        # Temperature
+        if match(sheet.cell_value(irow, 0), 'Curing - temperature'):
+            temperature = collections.OrderedDict()
+            # if type(sheet.row_values(irow)[1]) == float or len(sheet.row_values(irow)[1]) > 0:
+            temperature = addKVU('Temperature', '', sheet.row_values(irow)[1],
+                                 sheet.row_values(irow)[2], '', '', '', '', temperature)
+            # else:
+            #     temperature = addKVU('Temperature', sheet.row_values(irow)[1], '',
+            #                          sheet.row_values(irow)[2], '', '', '', '', temperature)
+            if len(temperature) > 0:
+                temp.append(temperature)
+        # Time
+        if match(sheet.cell_value(irow, 0), 'Curing - time'):
+            time = collections.OrderedDict()
+            # if type(sheet.row_values(irow)[1]) == float or len(sheet.row_values(irow)[1]) > 0:
+            time = addKVU('Time', '', sheet.row_values(irow)[1],
+                          sheet.row_values(irow)[2], '', '', '', '', time)
+            # else:
+            #     time = addKVU('Time', sheet.row_values(irow)[1], '',
+            #                   sheet.row_values(irow)[2], '', '', '', '', time)
+            if len(time) > 0:
+                temp.append(time)
+        # Pressure
+        if match(sheet.cell_value(irow, 0), 'Curing - pressure'):
+            pressure = collections.OrderedDict()
+            # if type(sheet.row_values(irow)[1]) == float or len(sheet.row_values(irow)[1]) > 0:
+            pressure = addKVU('Pressure', '', sheet.row_values(irow)[1],
+                              sheet.row_values(irow)[2], '', '', '', '', pressure)
+            # else:
+            #     pressure = addKVU('Pressure', sheet.row_values(irow)[1], '',
+            #                       sheet.row_values(irow)[2], '', '', '', '', pressure)
+            if len(pressure) > 0:
+                temp.append(pressure)    
+        # AmbientCondition
+        if match(sheet.cell_value(irow, 0), 'Curing - ambient condition'):
+            temp = insert('AmbientCondition', sheet.cell_value(irow, 1), temp)
+
         # move to the next row
         irow += 1
     # END OF THE LOOP
