@@ -3315,7 +3315,7 @@ def sheetMicrostructure(sheet, DATA, myXSDtree, jobDir):
     return DATA
 
 ## main
-def main(jobDir, code_srcDir, xsdDir, templateName):
+def compiler(jobDir, code_srcDir, xsdDir, templateName):
     ## Global variable myXSDtree
     # read the xsd tree
     myXSDtree = ET.parse(xsdDir)
