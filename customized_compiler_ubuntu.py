@@ -1680,6 +1680,13 @@ def sheetProcType(sheet, DATA, myXSDtree):
                 if len(temp_list) > 0:
                     # dump the temp_list as a dict into Process_list
                     Process_list.append(collections.OrderedDict({'In-SituPolymerization': temp_list}))
+            # OtherProcessing
+            if match(prcMtd, 'OtherProcessing'):
+                temp_list = [] # initialize
+                temp_list = sheetProcTypeHelper(sheet, row, temp_list, 'Processing method', myXSDtree) # helper
+                if len(temp_list) > 0:
+                    # dump the temp_list as a dict into Process_list
+                    Process_list.append(collections.OrderedDict({'OtherProcessing': temp_list}))
     # finish up the Experimental Procedure part
     if len(ExpPrc) > 0:
         Process_list.insert(0, collections.OrderedDict({'ExperimentalProcedure': ExpPrc}))
