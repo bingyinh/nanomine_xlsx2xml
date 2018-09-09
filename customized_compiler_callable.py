@@ -19,7 +19,7 @@ import codecs
 # -------------------------------------------- XML Schemas
 from xml.dom.minidom import parseString   # Python standard library
 import collections                        # Python standard library
-from lxml import etree as ET
+import xml.etree.ElementTree as ET
 
 # -------------------------------------------- DOI information retriever
 from doiretriever import mainDOI          # extract publication info by DOI
@@ -3396,3 +3396,4 @@ def compiler(jobDir, code_srcDir, xsdDir, templateName):
 
     ## Validate the xml file
     logName = runValidation(filename, xsdDir)
+
