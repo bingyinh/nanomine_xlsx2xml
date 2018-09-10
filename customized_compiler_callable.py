@@ -3395,5 +3395,5 @@ def compiler(jobDir, code_srcDir, xsdDir, templateName):
     #     _f.write("%s\n" % (parseString(diffusionDataxml).toprettyxml())[23:])
 
     ## Validate the xml file
-    logName = runValidation(filename, xsdDir)
+    logName = runValidation(filename, xsdDir, jobDir)
 
