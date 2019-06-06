@@ -94,7 +94,7 @@ def extractID(xlsxName, myXSDtree, jobDir, code_srcDir):
                 message += verifyID(ID_raw)
         # DOI
         if match(sheet_sample.row_values(row)[0], 'DOI'):
-            DOI = str(sheet_sample.row_values(row)[1])
+            DOI = str(sheet_sample.row_values(row)[1]).strip()
     # if no error detected
     if message == '':
         # call localDOI here
