@@ -964,7 +964,7 @@ def sheetProcTypeHelper(sheet, row, temp_list, stop_sign, myXSDtree, jobDir):
         # Description
         if match(sheet.cell_value(irow, 0), 'Other - description'):
             # temp = insert('Description', sheet.cell_value(irow, 1), temp)
-            temp = str(sheet.cell_value(irow, 1)).strip() # DANGEROUS! type(temp) changes here
+            temp = unicode(sheet.cell_value(irow, 1)).strip() # DANGEROUS! type(temp) changes here
     # Additive
         # Description
         if match(sheet.cell_value(irow, 0), 'Additive - description'):
@@ -3388,7 +3388,8 @@ def compiler(jobDir, code_srcDir, xsdDir, templateName):
         # insert the crawled Citation
         parent.insert(0, citationEle)
     # make directory for xml output
-    os.mkdir(jobDir + '/xml')
+    if not os.path.isdir(jobDir + '/xml'):
+        os.mkdir(jobDir + '/xml')
     # write information to ./xml/ID.xml
     filename = jobDir + '/xml/' + str(ID) + '.xml'
     tree.write(filename, encoding="UTF-8", xml_declaration=True)
