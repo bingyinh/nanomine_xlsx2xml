@@ -1,4 +1,4 @@
-# NanoMine xlsx to xml conversion tool
+# NanoMine xlsx to xml conversion tool (python 3)
 
 By Bingyin Hu
 
@@ -48,15 +48,13 @@ Required packages:
   - Used in the validation module.
   - http://lxml.de/
 
+- MechanicalSoup
+  - https://mechanicalsoup.readthedocs.io/en/stable/
+  - Used in the DOI modules. A python3 alternative for mechanize.
+
 - Beautiful Soup 4
   - https://www.crummy.com/software/BeautifulSoup/bs4/doc/index.html
-  - Used in the DOI modules.
-    
-- mechanize
-  - https://github.com/sparklemotion/mechanize
-  - "Mechanize is a ruby library that makes automated web interaction easy."
-  - Used in the DOI modules.
-
+        
 - ast
   - Python default package
   - Used in the DOI modules.
