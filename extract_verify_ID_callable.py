@@ -1,12 +1,13 @@
 ## Excel worksheet ID extraction script
 ## By Bingyin Hu 05/25/2018
+## updated to use python 3 by Bingyin Hu 07/01/2019
 
 import xlrd
 import sys
 from doiretriever import mainDOIsoupFirst
 from customized_compiler_callable import sortSequence
 import pickle
-import xml.etree.ElementTree as ET
+from lxml import etree
 import dicttoxml
 import collections
 import copy
@@ -62,7 +63,7 @@ def extractID(xlsxName, myXSDtree, jobDir, code_srcDir):
         return
     # special case for experimental data
     lab = False
-    for row in xrange(sheet_sample.nrows):
+    for row in range(sheet_sample.nrows):
         if match(sheet_sample.row_values(row)[0], 'Sample ID'):
             ID_raw = str(sheet_sample.row_values(row)[1])
             # if no ID is entered in the cell
@@ -82,7 +83,7 @@ def extractID(xlsxName, myXSDtree, jobDir, code_srcDir):
                 fid.write(ID_raw.strip())
         return
     # otherwise, find and save the ID in jobDir/ID.txt
-    for row in xrange(sheet_sample.nrows):
+    for row in range(sheet_sample.nrows):
         # ID
         if match(sheet_sample.row_values(row)[0], 'Sample ID'):
             ID_raw = str(sheet_sample.row_values(row)[1])
@@ -133,7 +134,7 @@ def localDOI(DOI, myXSDtree, code_srcDir):
         # paperID is updated in the doi.pkl first to avoid collision.
         PID = 'L' + str(alldoiDict['nextPID'])
         alldoiDict['nextPID'] += 1
-        alldoiDict[DOI] = {'paperID':PID}
+        alldoiDict[DOI] = {'paperID': PID}
         with open(code_srcDir + '/doi.pkl', 'wb') as f:
             pickle.dump(alldoiDict, f)
         # special case, special issue madeup DOI
@@ -147,9 +148,8 @@ def localDOI(DOI, myXSDtree, code_srcDir):
                 pickle.dump(rollback, f)
             return None
         # transfer the newdoiDict to an xml element
-        tree = dict2element(crawlerDict, myXSDtree) # an xml element
-        citation = tree.find('.//Citation')
-        alldoiDict[DOI]['metadata'] = citation
+        xmlstring = dict2element(crawlerDict, myXSDtree) # an xml element string
+        alldoiDict[DOI]['metadata'] = xmlstring
         # update the doi.pkl for the metadata field
         with open(code_srcDir + '/doi.pkl', 'wb') as f:
             pickle.dump(alldoiDict, f)
@@ -161,16 +161,17 @@ def localDOI(DOI, myXSDtree, code_srcDir):
 def generateID(doiDict, SID):
     PID = doiDict['paperID']
     LastName = 'LastName'
-    Name = doiDict['metadata'].find('.//Author')
+    tree = etree.XML(doiDict['metadata'])
+    Name = tree.find('.//Author')
     if Name is not None:
         LastName = Name.text.split(',')[0]
     PubYear = 'PubYear'
-    PubYearRaw = doiDict['metadata'].find('.//PublicationYear')
+    PubYearRaw = tree.find('.//PublicationYear')
     if PubYearRaw is not None:
         PubYear = PubYearRaw.text
     return '_'.join([str(PID), SID, LastName, PubYear])
 
-# convert DOI crawler dict into an xml element
+# convert DOI crawler dict into an xml element string
 def dict2element(crawlerDict, myXSDtree):
     # init
     CommonFields = []
@@ -189,7 +190,7 @@ def dict2element(crawlerDict, myXSDtree):
                     CommonFields.append({key: value})
         elif key == "Institution":
             if len(crawlerDict[key]) > 0:
-                CommonFields.append({u"Location": crawlerDict[key][0]})
+                CommonFields.append({"Location": crawlerDict[key][0]})
         else:
             if len(crawlerDict[key]) > 0:
                 CommonFields.append({key: crawlerDict[key][0]})
@@ -198,21 +199,20 @@ def dict2element(crawlerDict, myXSDtree):
     Journal = sortSequence(Journal, 'Journal', myXSDtree)
     # save to a dict
     if len(CommonFields) > 0:
-        Citation[u'CommonFields'] = CommonFields
+        Citation['CommonFields'] = CommonFields
     if len(Journal) > 0:
-        CitationType = collections.OrderedDict([(u'Journal',Journal)])
+        CitationType = collections.OrderedDict([('Journal',Journal)])
     if len(CitationType) > 0:
-        Citation[u'CitationType'] = CitationType
+        Citation['CitationType'] = CitationType
     if len(Citation) > 0:
-        output = collections.OrderedDict([(u'Citation', Citation)])
+        output = collections.OrderedDict([('Citation', Citation)])
     # convert to an xml element
     assert (len(output) > 0)
     doi_xml = dicttoxml.dicttoxml(output,attr_type=False)
-    doi_xml = doi_xml.replace('<item>','').replace('</item>','')
-    tree = ET.ElementTree(ET.fromstring(doi_xml))
-    return tree
+    doi_xml = doi_xml.replace(b'<item>',b'').replace(b'</item>',b'').replace(b'<item/>',b'').replace(b'<item >',b'')
+    return doi_xml
 
 def runEVI(jobDir, code_srcDir, xsdDir, templateName):
-    myXSDtree = ET.parse(xsdDir)
+    myXSDtree = etree.parse(xsdDir)
     xlsxName = jobDir + '/' + templateName
     extractID(xlsxName, myXSDtree, jobDir, code_srcDir)
