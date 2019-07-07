@@ -35,9 +35,6 @@ Required packages:
 - collections
   - Python default package
 
-- xml.etree.ElementTree
-  - Python default package
-
 - pickle
   - Python default package
 
@@ -45,7 +42,7 @@ Required packages:
   - Python default package
 
 - lxml
-  - Used in the validation module.
+  - etree function generates xml ElementTree and saves to the final xml file.
   - http://lxml.de/
 
 - MechanicalSoup
