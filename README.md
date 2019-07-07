@@ -1,6 +1,8 @@
-# NanoMine xlsx to xml conversion tool (python 3)
+# NanoMine xlsx to xml conversion tool (python 3 and python 2.7)
 
 By Bingyin Hu
+
+### Python 2.7 version see 'python2.7' branch. For Python 3+, use the 'master' branch directly.
 
 ### 1. System preparations
 
