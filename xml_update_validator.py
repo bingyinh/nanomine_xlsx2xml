@@ -43,12 +43,15 @@ def runValidation(xmlDir, xsdDir, jobDir):
                                'error': errorInfo})
                 # justerrors.append('[XML Schema Validation Error] ' + errorInfo)
     logName = jobDir + '/xml_validation_error_log_' + date.today().isoformat() + '.csv'
-    with open(logName, 'w', newline = '') as f:
+    with open(logName, 'w', newline = '', encoding = 'utf-8') as f:
+        f.write('\ufeff')
         writer = csv.DictWriter(f, fieldnames = ['xml directory', 'error'])
         writer.writeheader()
         # writer.writerow({'xml directory':"Date: " + date.today().isoformat()})
         for error in errors:
             writer.writerow(error)
+            print(error)
+            # writer.writerow({k.encode('utf8').strip(): v.encode('utf8').strip() for k, v in error.items()})
     return logName
 
 if __name__ == "__main__":

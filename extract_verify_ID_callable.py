@@ -209,7 +209,7 @@ def dict2element(crawlerDict, myXSDtree):
     # convert to an xml element
     assert (len(output) > 0)
     doi_xml = dicttoxml.dicttoxml(output,attr_type=False)
-    doi_xml = doi_xml.replace(b'<item>',b'').replace(b'</item>',b'').replace(b'<item/>',b'')
+    doi_xml = doi_xml.replace(b'<item>',b'').replace(b'</item>',b'').replace(b'<item/>',b'').replace(b'<item >',b'')
     return doi_xml
 
 def runEVI(jobDir, code_srcDir, xsdDir, templateName):
