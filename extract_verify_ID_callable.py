@@ -161,7 +161,7 @@ def localDOI(DOI, myXSDtree, code_srcDir):
 def generateID(doiDict, SID):
     PID = doiDict['paperID']
     LastName = 'LastName'
-    tree = etree.fromstring(doiDict['metadata'])
+    tree = etree.XML(doiDict['metadata'])
     Name = tree.find('.//Author')
     if Name is not None:
         LastName = Name.text.split(',')[0]
@@ -209,7 +209,7 @@ def dict2element(crawlerDict, myXSDtree):
     # convert to an xml element
     assert (len(output) > 0)
     doi_xml = dicttoxml.dicttoxml(output,attr_type=False)
-    doi_xml = doi_xml.replace('<item>','').replace('</item>','')replace('<item/>','')
+    doi_xml = doi_xml.replace(b'<item>',b'').replace(b'</item>',b'').replace(b'<item/>',b'')
     return doi_xml
 
 def runEVI(jobDir, code_srcDir, xsdDir, templateName):
