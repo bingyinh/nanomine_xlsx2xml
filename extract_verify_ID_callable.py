@@ -124,7 +124,7 @@ def extractID(xlsxName, myXSDtree, jobDir, code_srcDir):
 
 # check local dict for doi info
 def localDOI(DOI, myXSDtree, code_srcDir):
-    with open(code_srcDir + '/doi.pkl','rb') as f:
+    with open(code_srcDir + '/doi.pkl','r') as f:
         alldoiDict = pickle.load(f)
         rollback = copy.deepcopy(alldoiDict)
     if DOI not in alldoiDict:
@@ -134,7 +134,7 @@ def localDOI(DOI, myXSDtree, code_srcDir):
         PID = 'L' + str(alldoiDict['nextPID'])
         alldoiDict['nextPID'] += 1
         alldoiDict[DOI] = {'paperID':PID}
-        with open(code_srcDir + '/doi.pkl', 'wb') as f:
+        with open(code_srcDir + '/doi.pkl', 'w') as f:
             pickle.dump(alldoiDict, f)
         # special case, special issue madeup DOI
         if 'ma-SI' in DOI:
@@ -143,7 +143,7 @@ def localDOI(DOI, myXSDtree, code_srcDir):
         crawlerDict = mainDOIsoupFirst(DOI)
         # if doi is not valid, mainDOIsoupFirst() returns {}
         if len(crawlerDict) == 0:
-            with open(code_srcDir + '/doi.pkl', 'wb') as f:
+            with open(code_srcDir + '/doi.pkl', 'w') as f:
                 pickle.dump(rollback, f)
             return None
         # transfer the newdoiDict to an xml element
@@ -151,7 +151,7 @@ def localDOI(DOI, myXSDtree, code_srcDir):
         citation = tree.find('.//Citation')
         alldoiDict[DOI]['metadata'] = citation
         # update the doi.pkl for the metadata field
-        with open(code_srcDir + '/doi.pkl', 'wb') as f:
+        with open(code_srcDir + '/doi.pkl', 'w') as f:
             pickle.dump(alldoiDict, f)
         return alldoiDict[DOI]
     else:

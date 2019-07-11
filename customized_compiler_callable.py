@@ -3379,7 +3379,7 @@ def compiler(jobDir, code_srcDir, xsdDir, templateName):
     tree._setroot(root)
     # if DOI exists (excludes special issue madeup DOI), substitute the Citation element
     if len(DOI) > 0 and 'ma-SI' not in DOI:
-        with open(code_srcDir + '/doi.pkl', 'rb') as f:
+        with open(code_srcDir + '/doi.pkl', 'r') as f:
             alldoiDict = pickle.load(f)
         citationEle = alldoiDict[DOI]['metadata']
         parent = root.find('.//Citation/..')
