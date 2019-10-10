@@ -686,14 +686,18 @@ def sheetMatType(sheet, DATA, myXSDtree, jobDir):
             mcc = collections.OrderedDict()
             myRow = sheet.row_values(row) # save the list of row_values
             if type(myRow[2]) == float or len(myRow[2]) > 0:
-                mcc['mass'] = myRow[2]
+                if hasLen(myRow[1]):
+                    mcc['Constituent'] = myRow[1]
+                mcc['Fraction'] = {'mass':myRow[2]}
             if len(mcc) > 0:
                 MatrixComponent.append({'MatrixComponentComposition':mcc})
         if match(sheet.cell_value(row, 0), 'Matrix Component Composition volume fraction'):
             vcc = collections.OrderedDict()
             myRow = sheet.row_values(row) # save the list of row_values
             if type(myRow[2]) == float or len(myRow[2]) > 0:
-                vcc['volume'] = myRow[2]
+                if hasLen(myRow[1]):
+                    vcc['Constituent'] = myRow[1]
+                vcc['Fraction'] = {'volume':myRow[2]}
             if len(vcc) > 0:
                 MatrixComponent.append({'MatrixComponentComposition':vcc})
         # Filler
@@ -773,7 +777,9 @@ def sheetMatType(sheet, DATA, myXSDtree, jobDir):
             mcc = collections.OrderedDict()
             myRow = sheet.row_values(row) # save the list of row_values
             if type(myRow[2]) == float or len(myRow[2]) > 0:
-                mcc['mass'] = myRow[2]
+                if hasLen(myRow[1]):
+                    mcc['Constituent'] = myRow[1]
+                mcc['Fraction'] = {'mass':myRow[2]}
             if len(mcc) > 0:
                 FillerComponent.append({'FillerComponentComposition':mcc})
             # FillerComponent/FillerComponentComposition/volume
@@ -781,7 +787,9 @@ def sheetMatType(sheet, DATA, myXSDtree, jobDir):
             vcc = collections.OrderedDict()
             myRow = sheet.row_values(row) # save the list of row_values
             if type(myRow[2]) == float or len(myRow[2]) > 0:
-                vcc['volume'] = myRow[2]
+                if hasLen(myRow[1]):
+                    vcc['Constituent'] = myRow[1]
+                vcc['Fraction'] = {'volume':myRow[2]}
             if len(vcc) > 0:
                 FillerComponent.append({'FillerComponentComposition':vcc})
             # FillerComposition/mass(volume)
@@ -1657,12 +1665,12 @@ def sheetProcType(sheet, DATA, myXSDtree, jobDir):
                     # dump the temp_list as a dict into Process_list
                     Process_list.append(collections.OrderedDict({'In-SituPolymerization': temp_list}))
             # OtherProcessing
-            if match(prcMtd, 'OtherProcessing'):
+            if match(prcMtd, 'Other_Processing'):
                 temp_list = [] # initialize
                 temp_list = sheetProcTypeHelper(sheet, row, temp_list, 'Processing method', myXSDtree, jobDir) # helper
                 if len(temp_list) > 0:
                     # dump the temp_list as a dict into Process_list
-                    Process_list.append(collections.OrderedDict({'OtherProcessing': temp_list}))
+                    Process_list.append(collections.OrderedDict({'Other_Processing': temp_list}))
     # finish up the Experimental Procedure part
     if len(ExpPrc) > 0:
         Process_list.insert(0, collections.OrderedDict({'ExperimentalProcedure': ExpPrc}))
