@@ -1921,6 +1921,31 @@ def sheetPropMech(sheet, DATA_PROP, myXSDtree, jobDir):
             tenY = addKVU('TensileStressAtYield', myRow[1], myRow[2], myRow[3], myRow[4], myRow[5], '', myRow[6], tenY, jobDir, myXSDtree)
             if len(tenY) > 0:
                 temp.append(tenY)
+            # TensileStrength
+        if match(sheet.cell_value(row, 0), 'Tensile strength'):
+            tenS = collections.OrderedDict()
+            myRow = sheet.row_values(row) # save the list of row_values
+            while len(myRow) < 7:
+                myRow.append('') # prevent IndexError
+            tenS = addKVU('TensileStrength', myRow[1], myRow[2], myRow[3], myRow[4], myRow[5], '', myRow[6], tenS, jobDir, myXSDtree)
+            if len(tenS) > 0:
+                temp.append(tenS)
+            # StressRelaxation
+        if match(sheet.cell_value(row, 0), 'Stress relaxation (filename.xlsx)'):
+            if hasLen(sheet.cell_value(row, 1)):
+                strR = collections.OrderedDict()
+                strR = addKVU('StressRelaxation', '', '', '', '', '', '', sheet.cell_value(row, 1), strR, jobDir, myXSDtree)
+            if len(strR) > 0:
+                temp.append(strR)
+            # StrainAtBreak
+        if match(sheet.cell_value(row, 0), 'Strain at break'):
+            strB = collections.OrderedDict()
+            myRow = sheet.row_values(row) # save the list of row_values
+            while len(myRow) < 7:
+                myRow.append('') # prevent IndexError
+            strB = addKVU('StrainAtBreak', myRow[1], myRow[2], myRow[3], myRow[4], myRow[5], '', myRow[6], strB, jobDir, myXSDtree)
+            if len(strB) > 0:
+                temp.append(strB)
             # TensileToughness
         if match(sheet.cell_value(row, 0), 'Tensile toughness'):
             tenT = collections.OrderedDict()
@@ -2084,7 +2109,7 @@ def sheetPropMech(sheet, DATA_PROP, myXSDtree, jobDir):
             # preCrackingProcess (upper case leading P for EssentialWorkFracture)
         if match(sheet.cell_value(row, 0), 'Pre-cracking process'):
             tempFracture = insert('preCrackingProcess', sheet.cell_value(row, 1), tempFracture) 
-            # strainRate (upper case leading S for EssentialWorkFracture)
+            # strainRate
         if match(sheet.cell_value(row, 0), 'Strain rate'):
             strR = collections.OrderedDict()
             myRow = sheet.row_values(row) # save the list of row_values
@@ -2093,6 +2118,15 @@ def sheetPropMech(sheet, DATA_PROP, myXSDtree, jobDir):
             strR = addKVU('strainRate', myRow[1], myRow[2], myRow[3], myRow[4], myRow[5], '', myRow[6], strR, jobDir, myXSDtree)
             if len(strR) > 0:
                 tempFracture.append(strR)
+            # FractureEnergy
+        if match(sheet.cell_value(row, 0), 'Fracture energy'):
+            fraE = collections.OrderedDict()
+            myRow = sheet.row_values(row) # save the list of row_values
+            while len(myRow) < 7:
+                myRow.append('') # prevent IndexError
+            fraE = addKVU('FractureEnergy', myRow[1], myRow[2], myRow[3], myRow[4], myRow[5], '', myRow[6], fraE, jobDir, myXSDtree)
+            if len(fraE) > 0:
+                tempFracture.append(fraE)
             # sampleShape
         if match(sheet.cell_value(row, 0), 'Sample shape'):
             tempFracture = insert('sampleShape', sheet.cell_value(row, 1), tempFracture) 
