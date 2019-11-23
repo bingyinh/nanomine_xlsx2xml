@@ -697,7 +697,6 @@ def sheetMatType(sheet, DATA, myXSDtree, jobDir):
                 if hasLen(myRow[1]):
                     mcc['Constituent'] = myRow[1]
                 mcc['Fraction'] = {'mass':myRow[2]}
-                mcc['mass'] = myRow[2]
             if len(mcc) > 0:
                 MatrixComponent.append({'MatrixComponentComposition':mcc})
         if match(sheet.cell_value(row, 0), 'Matrix Component Composition volume fraction'):
@@ -707,7 +706,6 @@ def sheetMatType(sheet, DATA, myXSDtree, jobDir):
                 if hasLen(myRow[1]):
                     vcc['Constituent'] = myRow[1]
                 vcc['Fraction'] = {'volume':myRow[2]}
-                vcc['volume'] = myRow[2]
             if len(vcc) > 0:
                 MatrixComponent.append({'MatrixComponentComposition':vcc})
         # Filler
