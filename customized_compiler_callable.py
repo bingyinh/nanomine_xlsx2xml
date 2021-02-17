@@ -550,6 +550,9 @@ def sheetSampleInfo(sheet, DATA, myXSDtree, jobDir):
         _f.write(CurrentTime + '\t' + str(ID) + '\t' + '(' + str(UploaderName) +  ')' + '\t' + str(UploaderEmail) + '\n')
     # write ID into DATA
     DATA.append({'ID': ID})
+    DATA.append({'SchemaVersion': 'localtest'})
+    DATA.append({'SchemaID': 'localtest'})
+    DATA.append({'DatasetID': 'localtest'})
     # sort CommonFields, Journal, and LabGenerated
     CommonFields = sortSequence(CommonFields, 'CommonFields', myXSDtree)
     Journal = sortSequence(Journal, 'Journal', myXSDtree)
