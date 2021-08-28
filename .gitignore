@@ -1,0 +1,21 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# random files don't need to be in the repo
+PNC_schema_081218.xsd
+S1.jpg
+account.txt
+doi.csv
+guineapig.xlsx
+imlazy.py
+master_template_03302018.xlsx
+master_template_05242018.xlsx
+master_template_06042018.xlsx
+master_template_06062018.xlsx
+master_template_06072018.xlsx
+master_template_07262018.xlsx
+test8001.xlsx
+testfield/*
+workingdir.str
