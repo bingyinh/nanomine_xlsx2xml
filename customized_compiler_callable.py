@@ -189,7 +189,7 @@ def sortSequence(myList, myClassName, myXSDtree):
              'Additive':'ProcessingParameterAdditive',# temp;prevTemp
              'Solvent':'SolventType',# temp;prevTemp
              'Mixing':'ProcessingParameterMixing',# temp;prevTemp
-             'Extrusion':'UsedType',# temp;prevTemp
+             'Extrusion':'ExtrusionType',# temp;prevTemp
              'SingleScrewExtrusion':'SingleScrewExtrusionExtruderType',# Extrusion;prevExtrsHeader
              'TwinScrewExtrusion':'TwinScrewExtrusionExtruderType',# Extrusion;prevExtrsHeader
              'ExtrusionHeatingZone':'HeatingZoneType',# ExtrsHZ;'ExtrusionHeatingZone'
@@ -966,6 +966,8 @@ def sheetProcTypeHelper(sheet, row, temp_list, stop_sign, myXSDtree, jobDir):
     irow = row + 1 # the row we are looking at
     prevTemp = '' # save the previous cleanTemp
     MoldingInfo = [] # a list for Molding/MoldingInfo
+    Extrusion = [] # a list for Extrusion/SingleScrewExtrusion and Extrusion/TwinScrewExtrusion
+    prevExtrsHeader = ''
     # start scanning
     # as long as we are not 1) out of bound 2) find a stop_sign
     while (irow < sheet.nrows and
@@ -982,6 +984,15 @@ def sheetProcTypeHelper(sheet, row, temp_list, stop_sign, myXSDtree, jobDir):
                 temp.append({'MoldingInfo': MoldingInfo})
                 # initialize
                 MoldingInfo = []
+            # special case Extrusion, need to save the list from bottom up
+            if prevTemp == 'Extrusion':
+                if len(Extrusion) > 0:
+                    # sort Extrusion
+                    Extrusion = sortSequence(Extrusion, prevExtrsHeader, myXSDtree)
+                    temp.append({prevExtrsHeader: Extrusion})
+                # initialize
+                Extrusion = []
+                prevExtrsHeader = ''
             # save temp
             if len(temp) > 0: # update temp if it's not empty
                 # sort temp
@@ -989,7 +1000,6 @@ def sheetProcTypeHelper(sheet, row, temp_list, stop_sign, myXSDtree, jobDir):
                 temp_list.append({'ChooseParameter': {headers[prevTemp]: temp}})
                 temp = []
             prevTemp = cleanTemp # update prevTemp
-    # Aging (skipped)
     # Other
         # Description
         if match(sheet.cell_value(irow, 0), 'Other - description'):
@@ -1007,8 +1017,19 @@ def sheetProcTypeHelper(sheet, row, temp_list, stop_sign, myXSDtree, jobDir):
 
     # Extrusion
         # Used or not
-        if match(sheet.cell_value(irow, 0), 'Extrusion'):
-            temp = sheet.cell_value(irow, 1)
+        if match(sheet.cell_value(irow, 0), 'Extrusion - type'):
+            if sheet.cell_value(irow, 1) == 'single-screw extrusion':
+                prevExtrsHeader = 'SingleScrewExtrusion'
+            elif sheet.cell_value(irow, 1) == 'twin-screw extrusion':
+                prevExtrsHeader = 'TwinScrewExtrusion'
+            Extrusion = insert('Extruder', sheet.cell_value(irow, 1), Extrusion)
+        # Extrusion temperature
+        if match(sheet.cell_value(irow, 0), 'Extrusion - temperature'):
+            temperature = collections.OrderedDict()
+            temperature = addKVU('ExtrusionTemperature', '', sheet.row_values(irow)[1],
+                                 sheet.row_values(irow)[2], '', '', '', '', temperature, jobDir, myXSDtree)
+            if len(temperature) > 0:
+                Extrusion.append(temperature)
 
     # Heating (Use Heating - purpose to update prevTemp)
         # Purpose (Molding/Drying-Evaporation/Curing/Annealing, if not available then Heating)
@@ -1092,6 +1113,15 @@ def sheetProcTypeHelper(sheet, row, temp_list, stop_sign, myXSDtree, jobDir):
         MoldingInfo = sortSequence(MoldingInfo, 'MoldingInfo', myXSDtree)
         # then save MoldingInfo as a dict in temp
         temp.append({'MoldingInfo': MoldingInfo})
+    # special case Extrusion, need to save the list from bottom up
+    if prevTemp == 'Extrusion':
+        if len(Extrusion) > 0:
+            # sort Extrusion
+            Extrusion = sortSequence(Extrusion, prevExtrsHeader, myXSDtree)
+            temp.append({prevExtrsHeader: Extrusion})
+        # initialize
+        Extrusion = []
+        prevExtrsHeader = ''
     # save temp
     if len(temp) > 0: # update temp if it's not empty
         # sort temp
