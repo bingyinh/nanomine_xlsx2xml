@@ -179,6 +179,7 @@ def sortSequence(myList, myClassName, myXSDtree):
              'CommonFields':'CitationDetailType',# CommonFields;'CommonFields'
              'Journal':'CitationJournalType',# Journal;'Journal'
              'LabGenerated':'LabGeneratedType',# LabGenerated;'LabGenerated'
+             'ComputationalData':'ComputationalDataSourceType',# Computational;'ComputationalData'
              'MATERIALS':'MaterialsType', # temp_list;'MATERIALS'
              'Matrix':'MatrixType',# temp;prevTemp
              'MatrixComponent':'PolymerType',# MatrixComponent;'MatrixComponent'
@@ -477,6 +478,7 @@ def sheetSampleInfo(sheet, DATA, myXSDtree, jobDir):
     CommonFields = []
     Journal = [] # Thanks Richard!
     LabGenerated = []
+    Computational = []
     # a flag for DOI
     DOI = ""
     # ID read from ID.txt, in views.py only ID.txt exists this script will
@@ -549,6 +551,20 @@ def sheetSampleInfo(sheet, DATA, myXSDtree, jobDir):
                 LabGenerated = insert('DateOfMeasurement', realDate, LabGenerated)
         elif match(sheet.row_values(row)[0], 'Related DOI'):
             LabGenerated = insert('relatedDOI', sheet.row_values(row)[1], LabGenerated)
+        # computational data
+        elif match(sheet.row_values(row)[0], 'Date of Simulation Run'):
+            if hasLen(sheet.row_values(row)[1]) and str(sheet.row_values(row)[1]).replace('.','',1).isdigit():
+                timetuple = xlrd.xldate_as_tuple(sheet.row_values(row)[1], 0)
+                realDate = datetime.datetime(*timetuple).strftime('%m/%d/%Y')
+                Computational = insert('DateOfSimulationRun', realDate, Computational)
+        elif match(sheet.row_values(row)[0], 'Data owner'):
+            Computational = insert('DataOwner', sheet.row_values(row)[1], Computational)
+        elif match(sheet.row_values(row)[0], 'Related DOI'):
+            Computational = insert('relatedDOI', sheet.row_values(row)[1], Computational)
+        elif match(sheet.row_values(row)[0], 'Number of CPUs'):
+            Computational = insert('NumOfCPU', sheet.row_values(row)[1], Computational)
+        elif match(sheet.row_values(row)[0], 'Computational time (hour)'):
+            Computational = insert('ComputationalTime', sheet.row_values(row)[1], Computational)
     with open(jobDir + '/upload_history.txt', 'a+') as _f:
         _f.write(CurrentTime + '\t' + str(ID) + '\t' + '(' + str(UploaderName) +  ')' + '\t' + str(UploaderEmail) + '\n')
     # write ID into DATA
@@ -560,6 +576,7 @@ def sheetSampleInfo(sheet, DATA, myXSDtree, jobDir):
     CommonFields = sortSequence(CommonFields, 'CommonFields', myXSDtree)
     Journal = sortSequence(Journal, 'Journal', myXSDtree)
     LabGenerated = sortSequence(LabGenerated, 'LabGenerated', myXSDtree)
+    Computational = sortSequence(Computational, 'ComputationalData', myXSDtree)
     if len(CommonFields) > 0 and len(Journal) == 0:
         DATA.append({'DATA_SOURCE': {'Citation': {'CommonFields':CommonFields}}})
     if len(CommonFields) == 0 and len(Journal) > 0: # very unlikely
@@ -568,6 +585,8 @@ def sheetSampleInfo(sheet, DATA, myXSDtree, jobDir):
         DATA.append({'DATA_SOURCE': {'Citation': {'CommonFields':CommonFields, 'CitationType': {'Journal':Journal}}}})
     if len(LabGenerated) > 0:
         DATA.append({'DATA_SOURCE': {'LabGenerated': LabGenerated}})
+    if len(Computational) > 0:
+        DATA.append({'DATA_SOURCE': {'ComputationalData': Computational}})
     return (ID, DATA, DOI)
 
 # Sheet 2. Material Types
