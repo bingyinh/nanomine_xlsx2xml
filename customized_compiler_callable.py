@@ -254,7 +254,15 @@ def sortSequence(myList, myClassName, myXSDtree):
              'Dimension':'ImageSizeType', # Dimension;'Dimension'
              'Sample experimental info':'SampleType', # temp;prevTemp
              'PolymerNanocomposite':'Root', # DATA;'PolymerNanocomposite'
-             'Annealing':'GeneralConditionsType'# temp;prevTemp
+             'Annealing':'GeneralConditionsType',# temp;prevTemp
+             'SIMULATIONS':'SimulationsType',
+             'FiniteElementAnalysis':'FiniteElementAnalysisType',
+             'FEAModel':'FEAModelType',
+             'AbaqusModelConfiguration':'AbaqusModelConfigurationType',
+             'FEABoundaryConditions':'FEABoundaryConditionsGeneralType',
+             'FEALoadingConditions':'FEALoadingConditionsGeneralType',
+             'FEAMicrostructureGeneration':'FEAMicrostructureGenerationType',
+             'RVEShape':'RVEShapeType',
              } # {myClassName:xsdComplexTypeName}
     myTypeName = CTmap[myClassName] #example: MatrixType
     myTypeTree = myXSDtree.findall(".//*[@name='" + myTypeName + "']")
@@ -446,6 +454,16 @@ def whichProp(sheet, DATA_PROP, myXSDtree, jobDir):
                 rh = True
     return DATA_PROP
 
+# a helper method to identify which simulation is addressed in "Simulation"
+# sheets and return a list of saved simulation model specifications
+def whichSimu(sheet, DATA_SIMU, myXSDtree, jobDir):
+    if sheet.cell_value(0, 0).strip().lower() == 'simulation - fea':
+        DATA_SIMU = sheetSimulationFEA(sheet, DATA_SIMU, myXSDtree, jobDir)
+    elif sheet.cell_value(0, 0).strip().lower() == 'simulation - md':
+        pass # placeholder for MD template ingestion
+        # DATA_SIMU = sheetSimulationMD(sheet, DATA_SIMU, myXSDtree, jobDir)
+    return DATA_SIMU
+
 # a helper method to add information extracted by DOI retriever into the
 # CommonFields and substitute old replicate entries.
 def doiAdd(doiKVPair, CommonFields):
@@ -577,16 +595,18 @@ def sheetSampleInfo(sheet, DATA, myXSDtree, jobDir):
     Journal = sortSequence(Journal, 'Journal', myXSDtree)
     LabGenerated = sortSequence(LabGenerated, 'LabGenerated', myXSDtree)
     Computational = sortSequence(Computational, 'ComputationalData', myXSDtree)
-    if len(CommonFields) > 0 and len(Journal) == 0:
-        DATA.append({'DATA_SOURCE': {'Citation': {'CommonFields':CommonFields}}})
-    if len(CommonFields) == 0 and len(Journal) > 0: # very unlikely
-        DATA.append({'DATA_SOURCE': {'Citation': {'CitationType': {'Journal':Journal}}}})
-    if len(CommonFields) > 0 and len(Journal) > 0:
-        DATA.append({'DATA_SOURCE': {'Citation': {'CommonFields':CommonFields, 'CitationType': {'Journal':Journal}}}})
+    DATA_SOURCE = collections.OrderedDict()
+    Citation = collections.OrderedDict()
+    if len(CommonFields) > 0:
+        Citation['CommonFields'] = CommonFields
+    if len(Journal) > 0:
+        Citation['CitationType'] = {'Journal':Journal}
+    if len(Citation) > 0:
+        DATA_SOURCE['Citation'] = Citation
     if len(LabGenerated) > 0:
-        DATA.append({'DATA_SOURCE': {'LabGenerated': LabGenerated}})
+        DATA_SOURCE['LabGenerated'] = LabGenerated
     if len(Computational) > 0:
-        DATA.append({'DATA_SOURCE': {'ComputationalData': Computational}})
+        DATA_SOURCE['ComputationalData'] = Computational
     return (ID, DATA, DOI)
 
 # Sheet 2. Material Types
@@ -2948,6 +2968,283 @@ def sheetMicrostructure(sheet, DATA, myXSDtree, jobDir):
         DATA.append({'MICROSTRUCTURE': temp_list})
     return DATA
 
+# New worksheet for FEA data
+# Sheet 3. Simulation - FEA
+def sheetSimulationFEA(sheet, DATA_SIMU, myXSDtree, jobDir):
+    headers = {'FEA Model': 'FEAModel',
+               'Microstructure Generation': 'FEAMicrostructureGeneration'}
+    headers_sublv = {'FEA Model - Abaqus': 'AbaqusModelConfiguration',
+                     'Boundary Conditions': 'FEABoundaryConditions',
+                     'Loading Conditions': 'FEALoadingConditions',
+                     '2D RVE': 'RVEShape', '3D RVE': 'RVEShape'}
+    temp_list = [] # the highest level list for SIMULATIONS/FiniteElementAnalysis
+    temp = [] # always save temp if not empty when we find a match in headers
+    temp_sublv = [] # a sub-level list for non-leaf child elements of SIMULATIONS/FiniteElementAnalysis
+    prevTemp = '' # save the previous cleanTemp, "FEA Model" or "Microstructure Generation"
+    prevTemp_sublv = '' # save the previous cleanTemp_sublv, "FEA Model - Abaqus", "Boundary Conditions", "Loading Conditions", "2D RVE", or "3D RVE"
+    for row in range(sheet.nrows):
+        # always check first if this is a header row
+        match_hdr = matchList(sheet.cell_value(row, 0), headers.keys())
+        # on reading headers or sub-level headers, save and reset prevTemp_sublv and temp_sublv
+        if match_hdr or matchList(sheet.cell_value(row, 0), headers_sublv.keys()):
+            if len(temp_sublv) > 0 and len(prevTemp_sublv) > 0: # non-empty, save before reset
+                # sort the list
+                temp_sublv = sortSequence(temp_sublv, headers_sublv[prevTemp_sublv], myXSDtree)
+                # save it to temp
+                temp.append({headers_sublv[prevTemp_sublv]: temp_sublv})
+            # reset prevTemp_sublv and temp_sublv
+            temp_sublv = []
+            if matchList(sheet.cell_value(row, 0), headers_sublv.keys()):
+                prevTemp_sublv = matchList(sheet.cell_value(row, 0), headers_sublv.keys())
+            else:
+                prevTemp_sublv = ''
+        # on reading headers, save and reset prevTemp and temp_sublv
+        if match_hdr:
+            if len(prevTemp) == 0: # initialize prevTemp
+                prevTemp = match_hdr
+            # save temp
+            if len(temp) > 0: # update temp if it's not empty
+                # sort temp
+                temp = sortSequence(temp, headers[prevTemp], myXSDtree)
+                # save temp
+                temp_list.append({headers[prevTemp]: temp})
+                # reset temp
+                temp = []
+            prevTemp = match_hdr # update prevTemp
+        # FEAModel
+        # FEAModel/FEASoftware
+        if match(sheet.cell_value(row, 0), 'Software Used'):
+            temp = insert('FEASoftware', sheet.cell_value(row, 1), temp)
+        # FEAModel/FEANumOfElement
+        if match(sheet.cell_value(row, 0), 'Number of Elements'):
+            temp = insert('FEANumOfElement', sheet.cell_value(row, 1), temp)
+        # FEAModel/FEAMesh
+        if match(sheet.cell_value(row, 0), 'Mesh Type'):
+            meshtype = sheet.cell_value(row,2)
+            if meshtype == 'other':
+                meshtype = sheet.cell_value(row,1) or meshtype
+            temp = insert('FEAMesh', meshtype, temp)
+        # FEAModel/AbaqusElement
+        if match(sheet.cell_value(row, 0), 'Element Type - Abaqus'):
+            eletype = sheet.cell_value(row,2)
+            if eletype == 'other':
+                eletype = sheet.cell_value(row,1) or eletype
+            temp = insert('AbaqusElement', eletype, temp)
+        # FEAModel/ComsolElement
+        if match(sheet.cell_value(row, 0), 'Element Type - COMSOL'):
+            eletype = sheet.cell_value(row,2)
+            if eletype == 'other':
+                eletype = sheet.cell_value(row,1) or eletype
+            temp = insert('ComsolElement', eletype, temp)
+        # FEAModel/GeneralElement
+        if match(sheet.cell_value(row, 0), 'Element Type - General'):
+            eletype = sheet.cell_value(row,2)
+            if eletype == 'other':
+                eletype = sheet.cell_value(row,1) or eletype
+            temp = insert('GeneralElement', eletype, temp)
+        # FEAModel/FEAModelInputFile
+        if match(sheet.cell_value(row, 0), 'Model Input File'):
+            if hasLen(sheet.cell_value(row, 3)):
+                filename = str(sheet.cell_value(row, 3)).strip()
+                # if os.path.splitext(filename)[-1].lower() not in ['.inp', '.mph', '.m']:
+                #     # write the message in ./error_message.txt
+                #     with open(jobDir + '/error_message.txt', 'a') as fid:
+                #         fid.write('[File Error] "%s" is not an acceptable FEA model input file. Please check the file extension.\n' % (filename))
+                #         continue
+                # confirm whether the file exists
+                filename_up = os.path.splitext(filename)[0] + os.path.splitext(filename)[-1].upper()
+                filename_low = os.path.splitext(filename)[0] + os.path.splitext(filename)[-1].lower()
+                feaInputDir = ''
+                if os.path.exists(jobDir + '/' + filename_low):
+                    feaInputDir = jobDir + '/' + filename_low
+                elif os.path.exists(jobDir + '/' + filename_up):
+                    feaInputDir = jobDir + '/' + filename_up
+                else:
+                    # write the message in ./error_message.txt
+                    with open(jobDir + '/error_message.txt', 'a') as fid:
+                        fid.write('[File Error] Missing file! Please include "%s" in your uploads. Could be the spelling of the file extension.\n' % (filename))
+                        continue
+                if feaInputDir:
+                    if hasLen(sheet.cell_value(row, 1)): # if description provided
+                        temp = insert('FEAModelInputFile',
+                            {'description':sheet.cell_value(row, 1).strip(),
+                             'File':feaInputDir}, temp)
+                    else:
+                        temp = insert('FEAModelInputFile', {'File':feaInputDir}, temp)
+        
+        # FEAModel/AbaqusModelConfiguration
+        # FEAModel/AbaqusModelConfiguration/AbaqusLoading
+        if match(sheet.cell_value(row, 0), 'Loading Type'):
+            temp_sublv = insert('AbaqusLoading', sheet.cell_value(row, 2), temp_sublv)
+        # FEAModel/AbaqusModelConfigurationType/MinFrequency
+        if match(sheet.cell_value(row, 0), 'Min frequency'):
+            minFreq = collections.OrderedDict()
+            myRow = sheet.row_values(row) # save the list of row_values
+            while len(myRow) < 7:
+                myRow.append('') # prevent IndexError
+            minFreq = addKVU('MinFrequency', myRow[1], myRow[2], myRow[3],
+                             '', '', '', '', minFreq, jobDir, myXSDtree)
+            if len(minFreq) > 0:
+                temp_sublv.append(minFreq)
+        # FEAModel/AbaqusModelConfigurationType/MaxFrequency
+        if match(sheet.cell_value(row, 0), 'Max frequency'):
+            maxFreq = collections.OrderedDict()
+            myRow = sheet.row_values(row) # save the list of row_values
+            while len(myRow) < 7:
+                myRow.append('') # prevent IndexError
+            maxFreq = addKVU('MaxFrequency', myRow[1], myRow[2], myRow[3],
+                             '', '', '', '', maxFreq, jobDir, myXSDtree)
+            if len(maxFreq) > 0:
+                temp_sublv.append(maxFreq)
+        # FEAModel/AbaqusModelConfigurationType/NumberOfIntervals
+        if match(sheet.cell_value(row, 0), 'Number of Frequency Intervals'):
+            temp_sublv = insert('NumberOfIntervals', sheet.cell_value(row, 2), temp_sublv)
+        # FEAModel/AbaqusModelConfigurationType/ReactionForceMethod
+        if match(sheet.cell_value(row, 0), 'Reaction force computation'):
+            temp_sublv = insert('ReactionForceMethod', sheet.cell_value(row, 1), temp_sublv)
+
+        # FEAModel/FEABoundaryConditions
+        # FEAModel/FEABoundaryConditions/BoundaryConditionType
+        if match(sheet.cell_value(row, 0), 'Boundary Condition Type'):
+            temp_sublv = insert('BoundaryConditionType', sheet.cell_value(row, 1), temp_sublv)
+        # FEAModel/FEABoundaryConditions/MechanicalBoundaryCondition
+        if match(sheet.cell_value(row, 0), 'Mechanical Boundary Condition'):
+            temp_sublv = insert('MechanicalBoundaryCondition', sheet.cell_value(row, 1), temp_sublv)
+        # FEAModel/FEABoundaryConditions/MechanicalBCinX
+        if match(sheet.cell_value(row, 0), 'Mechanical BC - x direction'):
+            temp_sublv = insert('MechanicalBCinX', sheet.cell_value(row, 1), temp_sublv)
+        # FEAModel/FEABoundaryConditions/MechanicalBCinY
+        if match(sheet.cell_value(row, 0), 'Mechanical BC - y direction'):
+            temp_sublv = insert('MechanicalBCinY', sheet.cell_value(row, 1), temp_sublv)
+        # FEAModel/FEABoundaryConditions/MechanicalBCinZ
+        if match(sheet.cell_value(row, 0), 'Mechanical BC - z direction'):
+            temp_sublv = insert('MechanicalBCinZ', sheet.cell_value(row, 1), temp_sublv)
+        
+        # FEAModel/FEALoadingConditions
+        # FEAModel/FEALoadingConditions/Direction
+        if match(sheet.cell_value(row, 0), 'Direction'):
+            temp_sublv = insert('Direction', sheet.cell_value(row, 1), temp_sublv)
+        # FEAModel/FEALoadingConditions/Magnitude
+        if match(sheet.cell_value(row, 0), 'Magnitude'):
+            magn = collections.OrderedDict()
+            myRow = sheet.row_values(row) # save the list of row_values
+            while len(myRow) < 7:
+                myRow.append('') # prevent IndexError
+            magn = addKVU('Magnitude', myRow[1], myRow[2], myRow[3],
+                          '', '', '', '', magn, jobDir, myXSDtree)
+            if len(magn) > 0:
+                temp_sublv.append(magn)
+        # FEAModel/FEALoadingConditions/RelevantNodes
+        if match(sheet.cell_value(row, 0), 'Relevant Nodes'):
+            temp_sublv = insert('RelevantNodes', sheet.cell_value(row, 1), temp_sublv)
+        
+        # FEAMicrostructureGeneration
+        # FEAMicrostructureGeneration/Dimension
+        if match(sheet.cell_value(row, 0), 'Microstructure dimension'):
+            temp = insert('Dimension', sheet.cell_value(row, 1), temp)
+        # FEAMicrostructureGeneration/MicrostructureDataFile
+        if match(sheet.cell_value(row, 0), 'Microstructure datafile'):
+            if hasLen(sheet.cell_value(row, 4)):
+                filename = str(sheet.cell_value(row, 4)).strip()
+                # if os.path.splitext(filename)[-1].lower() not in ['.npy', '.mat']:
+                #     # write the message in ./error_message.txt
+                #     with open(jobDir + '/error_message.txt', 'a') as fid:
+                #         fid.write('[File Error] "%s" is not an acceptable FEA model input file. Please check the file extension.\n' % (filename))
+                #         continue
+                # confirm whether the file exists
+                filename_up = os.path.splitext(filename)[0] + os.path.splitext(filename)[-1].upper()
+                filename_low = os.path.splitext(filename)[0] + os.path.splitext(filename)[-1].lower()
+                msDir = ''
+                if os.path.exists(jobDir + '/' + filename_low):
+                    msDir = jobDir + '/' + filename_low
+                elif os.path.exists(jobDir + '/' + filename_up):
+                    msDir = jobDir + '/' + filename_up
+                else:
+                    # write the message in ./error_message.txt
+                    with open(jobDir + '/error_message.txt', 'a') as fid:
+                        fid.write('[File Error] Missing file! Please include "%s" in your uploads. Could be the spelling of the file extension.\n' % (filename))
+                        continue
+                if msDir:
+                    if hasLen(sheet.cell_value(row, 1)): # if description provided
+                        temp = insert('MicrostructureDataFile',
+                            {'description':sheet.cell_value(row, 1).strip(),
+                             'File':msDir}, temp)
+                    else:
+                        temp = insert('MicrostructureDataFile', {'File':msDir}, temp)
+        # FEAMicrostructureGeneration/RVEScale
+        if match(sheet.cell_value(row, 0), 'Scale - nm per RVE length unit'):
+            temp = insert('RVEScale', sheet.cell_value(row, 1), temp)
+        # FEAMicrostructureGeneration/RVEShape/RVEWidth
+        if match(sheet.cell_value(row, 0), 'Width'):
+            widt = collections.OrderedDict()
+            myRow = sheet.row_values(row) # save the list of row_values
+            while len(myRow) < 7:
+                myRow.append('') # prevent IndexError
+            # only proceed when a value is provided since the unit is fixed in this row
+            if len(str(myRow[2]).strip()) > 0:
+                widt = addKVU('RVEWidth', myRow[1], myRow[2], myRow[3],
+                              '', '', '', '', widt, jobDir, myXSDtree)
+                if len(widt) > 0:
+                    temp_sublv.append(widt)
+        # FEAMicrostructureGeneration/RVEShape/RVEHeight
+        if match(sheet.cell_value(row, 0), 'Height'):
+            heig = collections.OrderedDict()
+            myRow = sheet.row_values(row) # save the list of row_values
+            while len(myRow) < 7:
+                myRow.append('') # prevent IndexError
+            # only proceed when a value is provided since the unit is fixed in this row
+            if len(str(myRow[2]).strip()) > 0:
+                heig = addKVU('RVEHeight', myRow[1], myRow[2], myRow[3],
+                              '', '', '', '', heig, jobDir, myXSDtree)
+                if len(heig) > 0:
+                    temp_sublv.append(heig)
+        # FEAMicrostructureGeneration/RVEShape/RVELength
+        if match(sheet.cell_value(row, 0), 'Length'):
+            leng = collections.OrderedDict()
+            myRow = sheet.row_values(row) # save the list of row_values
+            while len(myRow) < 7:
+                myRow.append('') # prevent IndexError
+            # only proceed when a value is provided since the unit is fixed in this row
+            if len(str(myRow[2]).strip()) > 0:
+                leng = addKVU('RVELength', myRow[1], myRow[2], myRow[3],
+                              '', '', '', '', leng, jobDir, myXSDtree)
+                if len(leng) > 0:
+                    temp_sublv.append(leng)
+
+        # FEAMicrostructureGeneration/MeanNeighborDistance
+        if match(sheet.cell_value(row, 0), 'Mean neighbor distance'):
+            mnd = collections.OrderedDict()
+            myRow = sheet.row_values(row) # save the list of row_values
+            while len(myRow) < 7:
+                myRow.append('') # prevent IndexError
+            mnd = addKVU('MeanNeighborDistance', myRow[1], myRow[2], myRow[3],
+                          '', '', '', '', mnd, jobDir, myXSDtree)
+            if len(mnd) > 0:
+                temp.append(mnd)
+        # FEAMicrostructureGeneration/Orientation
+        if match(sheet.cell_value(row, 0), 'Orientation'):
+            temp = insert('Orientation', sheet.cell_value(row, 1), temp)
+
+    # END OF THE LOOP
+    # save sub-level list if it's not empty at the end of the loop
+    if len(temp_sublv) > 0 and len(prevTemp_sublv) > 0: # non-empty, save before reset
+        # sort the list
+        temp_sublv = sortSequence(temp_sublv, headers_sublv[prevTemp_sublv], myXSDtree)
+        # save it to temp
+        temp.append({headers_sublv[prevTemp_sublv]: temp_sublv})
+    # save temp if it's not empty at the end of the loop
+    if len(temp) > 0: # update temp if it's not empty
+        # sort temp
+        temp = sortSequence(temp, headers[prevTemp], myXSDtree)
+        # save temp
+        temp_list.append({headers[prevTemp]: temp})
+    # save the top level temp_list if it's not empty
+    if len(temp_list) > 0:
+        # sort temp_list
+        temp_list = sortSequence(temp_list, 'FiniteElementAnalysis', myXSDtree)
+        DATA_SIMU.append({'FiniteElementAnalysis': temp_list})
+    return DATA_SIMU
+
 ## main
 def compiler(jobDir, code_srcDir, xsdDir, templateName):
     ## Global variable myXSDtree
@@ -2956,6 +3253,7 @@ def compiler(jobDir, code_srcDir, xsdDir, templateName):
     # DATA containers
     DATA = [] # the list that will finally be turned into a dict for dicttoxml
     DATA_PROP = [] # the list for the PROPERTIES section
+    DATA_SIMU = [] # the list for the SIMULATIONS section
     ## Data extraction
     # Read the Excel template
     filename = jobDir + '/' + templateName
@@ -2972,29 +3270,38 @@ def compiler(jobDir, code_srcDir, xsdDir, templateName):
         if (sheet.nrows == 0):
             continue
         # check the header of the sheet to determine what it has inside
-        if (sheet.row_values(0)[0].strip().lower() == "sample info"):
+        if sheet.row_values(0)[0].strip().lower() == "sample info":
             # sample info sheet
             (ID, DATA, DOI) = sheetSampleInfo(sheet, DATA, myXSDtree, jobDir)
-        elif (sheet.row_values(0)[0].strip().lower() == "material types"):
+        elif sheet.row_values(0)[0].strip().lower() == "material types":
             # material types sheet
             DATA = sheetMatType(sheet, DATA, myXSDtree, jobDir)
-        elif (sheet.row_values(0)[0].strip().lower() == "synthesis and processing"):
+        elif sheet.row_values(0)[0].strip().lower() == "synthesis and processing":
             # synthesis and processing sheet
             DATA = sheetProcType(sheet, DATA, myXSDtree, jobDir)
-        elif (sheet.row_values(0)[0].strip().lower() == "characterization methods"):
+        elif sheet.row_values(0)[0].strip().lower() == "characterization methods":
             # characterization methods sheet
             DATA = sheetCharMeth(sheet, DATA, myXSDtree, jobDir)
-        elif (sheet.row_values(0)[0].strip().lower() == "properties addressed"):
+        elif sheet.row_values(0)[0].strip().lower() == "properties addressed":
             # properties addressed sheet, this part will be saved in DATA_PROP which
             # will be thereafter saved in DATA
             DATA_PROP = whichProp(sheet, DATA_PROP, myXSDtree, jobDir)
-        elif (sheet.row_values(0)[0].strip().lower() == "microstructure"):
+        elif sheet.row_values(0)[0].strip().lower() == "microstructure":
             # microstructure sheet
             DATA = sheetMicrostructure(sheet, DATA, myXSDtree, jobDir)
+        # new worksheets for computational data (FEA, MD)
+        elif sheet.row_values(0)[0].strip().lower().startswith("simulation"):
+            DATA_SIMU = whichSimu(sheet, DATA_SIMU, myXSDtree, jobDir)
+
     if len(DATA_PROP) > 0:
         # sort DATA_PROP
         DATA_PROP = sortSequence(DATA_PROP, 'PROPERTIES', myXSDtree)
         DATA.append({'PROPERTIES': DATA_PROP})
+
+    if len(DATA_SIMU) > 0:
+        # sort DATA_SIMU
+        DATA_SIMU = sortSequence(DATA_SIMU, 'SIMULATIONS', myXSDtree)
+        DATA.append({'SIMULATIONS': DATA_SIMU})
 
     ## Finish constructing DATA list, generate the output xml file
     # sort DATA
