@@ -1932,7 +1932,7 @@ def sheetPropVisc(sheet, DATA_PROP, myXSDtree, jobDir, start_row=0, stop_sign=se
             if len(freQ) > 0:
                 DMA_Test.append(freQ)
         # DynamicProperties/DynamicPropertyProfile (if we have multiple entries, copy all other fields in DynamicProperties)
-        if match(sheet.cell_value(row, 0), 'DMA Datafile.xlsx'):
+        if match(sheet.cell_value(row, 0), 'DMA Datafile'):
             dynP = collections.OrderedDict()
             myRow = sheet.row_values(row) # save the list of row_values
             while len(myRow) < 7:
@@ -1943,7 +1943,7 @@ def sheetPropVisc(sheet, DATA_PROP, myXSDtree, jobDir, start_row=0, stop_sign=se
                 temp.append(dynP)
                 DMA_file_num += 1 # add 1 count
         # DynamicProperties/MasterCurve
-        if match(sheet.cell_value(row, 0), 'Master Curve.xlsx'):
+        if match(sheet.cell_value(row, 0), 'Master Curve'):
             masC = collections.OrderedDict()
             masC_list = collections.OrderedDict()
             myRow = sheet.row_values(row) # save the list of row_values
