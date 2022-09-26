@@ -1825,7 +1825,7 @@ def sheetPropMech(sheet, DATA_PROP, myXSDtree, jobDir, start_row=0, stop_sign=se
 
 
 # Sheet 5. Properties addressed - Viscoelastic
-def sheetPropVisc(sheet, DATA_PROP, myXSDtree, jobDir):
+def sheetPropVisc(sheet, DATA_PROP, myXSDtree, jobDir, start_row=0, stop_sign=set()):
     headers = {'Dynamic properties': 'DynamicProperties',
                'Creep': 'Creep'}
     headers_sub = {'Equipment Description': 'Description',
@@ -1849,7 +1849,10 @@ def sheetPropVisc(sheet, DATA_PROP, myXSDtree, jobDir):
     prevDMA = '' # save the previous cleanDMA, "Frequency sweep", "Temperature sweep" or "Strain sweep"
     DMA_file_num = 0 # count the number of DMA file.xlsx specified by the user
 
-    for row in range(sheet.nrows):
+    for row in range(start_row, sheet.nrows):
+        # early stopping for "Material Properties - FEA" worksheet
+        if sheet.cell_value(row, 0) in stop_sign:
+            break
         # First deal with the DMA_Test
         if matchList(sheet.cell_value(row, 0), headers.keys()) or matchList(sheet.cell_value(row, 0), headers_creep.keys()):
             if len(DMA_Test) > 0 and len(prevDMA) > 0: # update DMA_Test if it's not empty and user has selected DMA_mode
@@ -2115,7 +2118,7 @@ def sheetPropVisc(sheet, DATA_PROP, myXSDtree, jobDir):
     return DATA_PROP
 
 # Sheet 5. Properties addressed - Electrical
-def sheetPropElec(sheet, DATA_PROP, myXSDtree, jobDir):
+def sheetPropElec(sheet, DATA_PROP, myXSDtree, jobDir, start_row=0, stop_sign=set()):
     headers = {'Conductivity': 'ElectricConductivity',
                'Current density': 'CurrentDensity',
                'Energy density': 'EnergyDensity',
@@ -2132,7 +2135,10 @@ def sheetPropElec(sheet, DATA_PROP, myXSDtree, jobDir):
     dep = collections.OrderedDict() # dict for dependence condition
     depend = '' # FrequencyDependence or TemperatureDependence
     prevTemp = '' # save the previous cleanTemp
-    for row in range(sheet.nrows):
+    for row in range(start_row, sheet.nrows):
+        # early stopping for "Material Properties - FEA" worksheet
+        if sheet.cell_value(row, 0) in stop_sign:
+            break
         cleanTemp = matchList(sheet.cell_value(row, 0), headers.keys())
         if cleanTemp:
             if len(prevTemp) == 0: # initialize prevTemp
@@ -2356,7 +2362,7 @@ def sheetPropElec(sheet, DATA_PROP, myXSDtree, jobDir):
 
 
 # Sheet 5. Properties addressed - Thermal
-def sheetPropTher(sheet, DATA_PROP, myXSDtree, jobDir):
+def sheetPropTher(sheet, DATA_PROP, myXSDtree, jobDir, start_row=0, stop_sign=set()):
     headers = {'DSC profile': 'DSC_Profile',
                'Measurement Method': 'MeasurementMethod',
                'Crystallinity': 'Crystallinity',
@@ -2375,7 +2381,10 @@ def sheetPropTher(sheet, DATA_PROP, myXSDtree, jobDir):
     temp_list = [] # the highest level list for PROPERTIES/Thermal
     temp = [] # always save temp if not empty when we find a match in headers
     prevTemp = '' # save the previous cleanTemp
-    for row in range(sheet.nrows):
+    for row in range(start_row, sheet.nrows):
+        # early stopping for "Material Properties - FEA" worksheet
+        if sheet.cell_value(row, 0) in stop_sign:
+            break
         cleanTemp = matchList(sheet.cell_value(row, 0), headers.keys())
         if cleanTemp:
             if len(prevTemp) == 0: # initialize prevTemp
@@ -2602,7 +2611,7 @@ def sheetPropTher(sheet, DATA_PROP, myXSDtree, jobDir):
 
 
 # Sheet 5. Properties addressed - Volumetric
-def sheetPropVolu(sheet, DATA_PROP, myXSDtree, jobDir):
+def sheetPropVolu(sheet, DATA_PROP, myXSDtree, jobDir, start_row=0, stop_sign=set()):
     headers = {'Weight loss': 'WeightLoss',
                'Interfacial thickness': 'InterphaseThickness',
                'Density': 'Density',
@@ -2613,7 +2622,10 @@ def sheetPropVolu(sheet, DATA_PROP, myXSDtree, jobDir):
                'Water absorption': 'WaterAbsorption'}
     temp_list = [] # the highest level list for PROPERTIES/Volumetric
     prevTemp = '' # save the previous cleanTemp
-    for row in range(sheet.nrows):
+    for row in range(start_row, sheet.nrows):
+        # early stopping for "Material Properties - FEA" worksheet
+        if sheet.cell_value(row, 0) in stop_sign:
+            break
         cleanTemp = matchList(sheet.cell_value(row, 0), headers.keys())
         if cleanTemp:
             if len(prevTemp) == 0: # initialize prevTemp
@@ -2716,7 +2728,7 @@ def sheetPropVolu(sheet, DATA_PROP, myXSDtree, jobDir):
 
 
 # Sheet 5. Properties addressed - Rheological
-def sheetPropRheo(sheet, DATA_PROP, myXSDtree, jobDir):
+def sheetPropRheo(sheet, DATA_PROP, myXSDtree, jobDir, start_row=0, stop_sign=set()):
     headers = {'Complex Modulus': 'RheologicalComplexModulus',
                'Viscosity': 'RheologicalViscosity'}
     headers_DMA = {'Frequency sweep': 'FrequencySweep',
@@ -2727,7 +2739,10 @@ def sheetPropRheo(sheet, DATA_PROP, myXSDtree, jobDir):
     DMA_Test = [] # a list for Rheological/.../RheometerMode/.../condition
     prevTemp = '' # save the previous cleanTemp, "Complex Modulus" or "Viscosity"
     prevDMA = '' # save the previous cleanDMA, "Frequency sweep", "Temperature sweep" or "Strain sweep"
-    for row in range(sheet.nrows):
+    for row in range(start_row, sheet.nrows):
+        # early stopping for "Material Properties - FEA" worksheet
+        if sheet.cell_value(row, 0) in stop_sign:
+            break
         # First deal with the DMA_Test
         if matchList(sheet.cell_value(row, 0), headers.keys()):
             if len(DMA_Test) > 0 and len(prevDMA) > 0: # update DMA_Test if it's not empty and user has selected DMA_mode
@@ -3265,7 +3280,8 @@ def sheetMatPropFEA(sheet, DATA, myXSDtree, jobDir):
     headers = {'Matrix': 'Matrix', 'Filler': 'Filler', 
         'Number of interphase':'NumberOfInterphase', 'Interphase': 'Interphase'}
     headers_PROP = {'Properties - Mechanical', 'Properties - Viscoelastic',
-        'Properties - Electrical', 'Properties - Rheological', 'Properties - Thermal'}
+        'Properties - Electrical', 'Properties - Rheological',
+        'Properties - Thermal', 'Properties - Volumetric'}
     prop_stop_signs = set(headers.keys()) # init prop_stop_signs to top level headers
     prop_stop_signs.update(headers_PROP) # update it with property headers
     constituentComponent = [] # a list for MATERIALS/Matrix/MatrixComponent, MATERIALS/Filler/FillerComponent, MATERIALS/Interphase/InterphaseComponent
@@ -3418,9 +3434,21 @@ def sheetMatPropFEA(sheet, DATA, myXSDtree, jobDir):
         if matchList(sheet.cell_value(row, 0), headers_PROP) == 'Properties - Mechanical':
             # use row+1 since the current row will trigger early stopping
             sheetPropMech(sheet, constituentProp, myXSDtree, jobDir, start_row=row+1, stop_sign=prop_stop_signs)
-
-    # headers_PROP = {'Properties - Mechanical', 'Properties - Viscoelastic',
-    #     'Properties - Electrical', 'Properties - Rheological', 'Properties - Thermal'}
+        if matchList(sheet.cell_value(row, 0), headers_PROP) == 'Properties - Viscoelastic':
+            # use row+1 since the current row will trigger early stopping
+            sheetPropVisc(sheet, constituentProp, myXSDtree, jobDir, start_row=row+1, stop_sign=prop_stop_signs)
+        if matchList(sheet.cell_value(row, 0), headers_PROP) == 'Properties - Electrical':
+            # use row+1 since the current row will trigger early stopping
+            sheetPropElec(sheet, constituentProp, myXSDtree, jobDir, start_row=row+1, stop_sign=prop_stop_signs)
+        if matchList(sheet.cell_value(row, 0), headers_PROP) == 'Properties - Rheological':
+            # use row+1 since the current row will trigger early stopping
+            sheetPropRheo(sheet, constituentProp, myXSDtree, jobDir, start_row=row+1, stop_sign=prop_stop_signs)
+        if matchList(sheet.cell_value(row, 0), headers_PROP) == 'Properties - Thermal':
+            # use row+1 since the current row will trigger early stopping
+            sheetPropTher(sheet, constituentProp, myXSDtree, jobDir, start_row=row+1, stop_sign=prop_stop_signs)
+        if matchList(sheet.cell_value(row, 0), headers_PROP) == 'Properties - Volumetric':
+            # use row+1 since the current row will trigger early stopping
+            sheetPropVolu(sheet, constituentProp, myXSDtree, jobDir, start_row=row+1, stop_sign=prop_stop_signs)
 
     # END OF THE LOOP
     # special case NonSphericalShape, need to save the list from
