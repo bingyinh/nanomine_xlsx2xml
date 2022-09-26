@@ -74,6 +74,11 @@ def read_excel_profile(filename, jobDir):
                 else:
                     profile_data.append({'row':({'column':row[0]},
                                                 {'column':row[1]})})
+    else:
+        # write the message in ./error_message.txt
+        with open(jobDir + '/error_message.txt', 'a') as fid:
+            fid.write('[File Error] File extension of %s is not supported.\n' % (filename))
+            return ''
     # return the package
     return {'headers': header, 'rows': profile_data}
 
