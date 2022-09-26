@@ -2061,6 +2061,34 @@ def sheetPropVisc(sheet, DATA_PROP, myXSDtree, jobDir, start_row=0, stop_sign=se
             fleS = addKVU('FlexuralCreepStrain', myRow[1], myRow[2], myRow[3], myRow[4], myRow[5], '', myRow[6], fleS, jobDir, myXSDtree)
             if len(fleS) > 0:
                 temp_Creep.append(fleS)
+        # new rows added for "Material Properties - FEA" worksheet
+        # DynamicProperties/ShiftingFactor
+        if match(sheet.cell_value(row, 0), 'Shifting factor'):
+            shiF = collections.OrderedDict()
+            myRow = sheet.row_values(row) # save the list of row_values
+            while len(myRow) < 7:
+                myRow.append('') # prevent IndexError
+            shiF = addKVU('ShiftingFactor', myRow[1], myRow[2], '', '', '', '', '', shiF, jobDir, myXSDtree)
+            if len(shiF) > 0:
+                temp.append(shiF)
+        # DynamicProperties/LeftBroadeningFactor
+        if match(sheet.cell_value(row, 0), 'Left broadening factor'):
+            lefB = collections.OrderedDict()
+            myRow = sheet.row_values(row) # save the list of row_values
+            while len(myRow) < 7:
+                myRow.append('') # prevent IndexError
+            lefB = addKVU('LeftBroadeningFactor', myRow[1], myRow[2], '', '', '', '', '', lefB, jobDir, myXSDtree)
+            if len(lefB) > 0:
+                temp.append(lefB)
+        # DynamicProperties/RightBroadeningFactor
+        if match(sheet.cell_value(row, 0), 'Right broadening factor'):
+            rigB = collections.OrderedDict()
+            myRow = sheet.row_values(row) # save the list of row_values
+            while len(myRow) < 7:
+                myRow.append('') # prevent IndexError
+            rigB = addKVU('RightBroadeningFactor', myRow[1], myRow[2], '', '', '', '', '', rigB, jobDir, myXSDtree)
+            if len(rigB) > 0:
+                temp.append(rigB)
 
     # END OF THE LOOP
     # save DMA_Test if it's not empty and user has selected DMA_mode
