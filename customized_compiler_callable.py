@@ -264,7 +264,11 @@ def sortSequence(myList, myClassName, myXSDtree):
              'FEALoadingConditions':'FEALoadingConditionsGeneralType',
              'FEAMicrostructureGeneration':'FEAMicrostructureGenerationType',
              'RVEShape':'RVEShapeType',
+             'Interphase':'InterphaseType',
              'InterphaseComponent':'InterphaseComponentType',
+             'MatrixProperties':'PropertiesType',
+             'FillerProperties':'PropertiesType',
+             'InterphaseProperties':'PropertiesType',
              } # {myClassName:xsdComplexTypeName}
     myTypeName = CTmap[myClassName] #example: MatrixType
     myTypeTree = myXSDtree.findall(".//*[@name='" + myTypeName + "']")
@@ -1373,7 +1377,7 @@ def sheetCharMeth(sheet, DATA, myXSDtree, jobDir):
 
 
 # Sheet 5. Properties addressed - Mechanical
-def sheetPropMech(sheet, DATA_PROP, myXSDtree, jobDir):
+def sheetPropMech(sheet, DATA_PROP, myXSDtree, jobDir, start_row=0, stop_sign=set()):
     headers = {'Tensile': 'Tensile', 'Flexural': 'Flexural',
                'Compression': 'Compression', 'Shear': 'Shear',
                'Fracture': 'FractureToughness', 'Impact': 'Impact',
@@ -1389,7 +1393,10 @@ def sheetPropMech(sheet, DATA_PROP, myXSDtree, jobDir):
     prevTemp = '' # save the previous cleanTemp
     prevTempFrac = '' # save the previous cleanTempFrac
     underFrac = False # a flag, True if our cursor is under a Fracture field. We need this flag in case the Excel sheet ends with a shared "Loading Profile (filename.xlsx)"
-    for row in range(sheet.nrows):
+    for row in range(start_row, sheet.nrows):
+        # early stopping for "Material Properties - FEA" worksheet
+        if sheet.cell_value(row, 0) in stop_sign:
+            break
         # First deal with the Fracture
         cleanTempFrac = matchList(sheet.cell_value(row, 0), headers_fracture.keys())
         if cleanTempFrac:
@@ -3251,9 +3258,13 @@ def sheetSimulationFEA(sheet, DATA_SIMU, myXSDtree, jobDir):
 def sheetMatPropFEA(sheet, DATA, myXSDtree, jobDir):
     headers = {'Matrix': 'Matrix', 'Filler': 'Filler', 
         'Number of interphase':'NumberOfInterphase', 'Interphase': 'Interphase'}
-    MatrixFillerComponent = [] # a list for MATERIALS/Matrix/MatrixComponent and MATERIALS/Filler/FillerComponent
-    InterphaseComponent = [] # a list for MATERIALS/Interphase/InterphaseComponent
+    headers_PROP = {'Properties - Mechanical', 'Properties - Viscoelastic',
+        'Properties - Electrical', 'Properties - Rheological', 'Properties - Thermal'}
+    prop_stop_signs = set(headers.keys()) # init prop_stop_signs to top level headers
+    prop_stop_signs.update(headers_PROP) # update it with property headers
+    constituentComponent = [] # a list for MATERIALS/Matrix/MatrixComponent, MATERIALS/Filler/FillerComponent, MATERIALS/Interphase/InterphaseComponent
     FillerComposition = [] # a list for MATERIALS/Filler/FillerComposition
+    constituentProp = [] # a list for MATERIALS/Matrix/MatrixProperties, MATERIALS/Filler/FillerProperties, MATERIALS/Interphase/InterphaseProperties
     nonSpher = collections.OrderedDict() # a list for MATERIALS/Filler/FillerComponent/NonSphericalShape
     temp_list = [] # the highest level list for MATERIALS
     temp = [] # always save temp if not empty when we find a match in headers
@@ -3265,20 +3276,29 @@ def sheetMatPropFEA(sheet, DATA, myXSDtree, jobDir):
             if len(prevTemp) == 0: # initialize prevTemp
                 prevTemp = cleanTemp
             # special case NonSphericalShape, need to save the dict from bottom up
-            # into FillerComponent
+            # into constituentComponent (FillerComponent)
             if len(nonSpher) > 0:
-                FillerComponent.append({'NonSphericalShape': nonSpher})
+                constituentComponent.append({'NonSphericalShape': nonSpher})
                 # initialize
                 nonSpher = collections.OrderedDict() # initialize
-            # special case MatrixFillerComponent, need to save the list from bottom up
-            # into temp
-            if len(MatrixFillerComponent) > 0:
-                componentType = 'MatrixComponent' if prevTemp == 'Matrix' else 'FillerComponent'
-                # sort MatrixFillerComponent
-                MatrixFillerComponent = sortSequence(MatrixFillerComponent, componentType, myXSDtree)
-                temp.append({componentType: MatrixFillerComponent})
+            # special case constituentProp, need to save the list from bottom up
+            # into constituentComponent
+            if len(constituentProp) > 0:
+                componentType = f'{prevTemp}Properties'
+                # sort constituentComponent
+                constituentProp = sortSequence(constituentProp, componentType, myXSDtree)
+                constituentComponent.append({componentType: constituentProp})
                 # initialize
-                MatrixFillerComponent = []
+                constituentProp = []
+            # special case constituentComponent, need to save the list from bottom up
+            # into temp
+            if len(constituentComponent) > 0:
+                componentType = f'{prevTemp}Component'
+                # sort constituentComponent
+                constituentComponent = sortSequence(constituentComponent, componentType, myXSDtree)
+                temp.append({componentType: constituentComponent})
+                # initialize
+                constituentComponent = []
             # special case FillerComposition
             if len(FillerComposition) > 0:
                 # sort FillerComposition
@@ -3286,14 +3306,6 @@ def sheetMatPropFEA(sheet, DATA, myXSDtree, jobDir):
                 temp.append({'FillerComposition': FillerComposition})
                 # reset
                 FillerComposition = []
-            # special case InterphaseComponent, need to save the list from bottom up
-            # into temp
-            if len(InterphaseComponent) > 0:
-                # sort InterphaseComponent
-                InterphaseComponent = sortSequence(InterphaseComponent, 'InterphaseComponent', myXSDtree)
-                temp.append({'InterphaseComponent': InterphaseComponent})
-                # reset
-                InterphaseComponent = []
             # save temp
             if len(temp) > 0: # update temp if it's not empty
                 # sort temp
@@ -3302,54 +3314,40 @@ def sheetMatPropFEA(sheet, DATA, myXSDtree, jobDir):
                 temp = []
             prevTemp = cleanTemp # update prevTemp
         # Matrix
-            # MatrixComponent/ChemicalName
+            # MatrixComponent/ChemicalName, FillerComponent/ChemicalName
         if match(sheet.cell_value(row, 0), 'Chemical name'):
-            MatrixFillerComponent = insert('ChemicalName', sheet.cell_value(row, 1), MatrixFillerComponent)
-            # MatrixComponent/Abbreviation
+            constituentComponent = insert('ChemicalName', sheet.cell_value(row, 1), constituentComponent)
+            # MatrixComponent/Abbreviation, FillerComponent/Abbreviation
         if match(sheet.cell_value(row, 0), 'Abbreviation'):
-            MatrixFillerComponent = insert('Abbreviation', sheet.cell_value(row, 1), MatrixFillerComponent)
+            constituentComponent = insert('Abbreviation', sheet.cell_value(row, 1), constituentComponent)
             # MatrixComponent/PlasticType
         if match(sheet.cell_value(row, 0), 'Polymer plastic type'):
-            MatrixFillerComponent = insert('PlasticType', sheet.cell_value(row, 1), MatrixFillerComponent)
+            constituentComponent = insert('PlasticType', sheet.cell_value(row, 1), constituentComponent)
             # MatrixComponent/PolymerType
         if match(sheet.cell_value(row, 0), 'Polymer type'):
-            MatrixFillerComponent = insert('PolymerType', sheet.cell_value(row, 1), MatrixFillerComponent)
-            # MatrixComponent/Density
-        if match(sheet.cell_value(row, 0), 'Density') and prevTemp == 'Matrix':
+            constituentComponent = insert('PolymerType', sheet.cell_value(row, 1), constituentComponent)
+            # MatrixComponent/Density, FillerComponent/Density
+        if match(sheet.cell_value(row, 0), 'Density'):
             denS = collections.OrderedDict()
             myRow = sheet.row_values(row) # save the list of row_values
             denS = addKVU('Density', myRow[1], myRow[2], myRow[3], '', '', '', '', denS, jobDir, myXSDtree)
             if len(denS) > 0:
-                MatrixFillerComponent.append(denS)
-        # TODO Matrix - Properties
+                constituentComponent.append(denS)
         # Filler
-            # FillerComponent/ChemicalName
-        if match(sheet.cell_value(row, 0), 'Filler chemical name/Filler name'):
-            MatrixFillerComponent = insert('ChemicalName', sheet.cell_value(row, 1), MatrixFillerComponent)
-            # FillerComponent/Abbreviation
-        if match(sheet.cell_value(row, 0), 'Filler abbreviation'):
-            MatrixFillerComponent = insert('Abbreviation', sheet.cell_value(row, 1), MatrixFillerComponent)
-            # FillerComponent/Density
-        if match(sheet.cell_value(row, 0), 'Density') and prevTemp == 'Filler':
-            denS = collections.OrderedDict()
-            myRow = sheet.row_values(row) # save the list of row_values
-            denS = addKVU('Density', myRow[1], myRow[2], myRow[3], '', '', '', '', denS, jobDir, myXSDtree)
-            if len(denS) > 0:
-                MatrixFillerComponent.append(denS)
             # FillerComponent/SphericalParticleDiameter
         if match(sheet.cell_value(row, 0), 'Particle diameter'):
             parS = collections.OrderedDict()
             myRow = sheet.row_values(row) # save the list of row_values
             parS = addKVSU('SphericalParticleDiameter', myRow[1], myRow[2], myRow[3], myRow[4], myRow[5], myRow[6], '', '', parS, jobDir, myXSDtree)
             if len(parS) > 0:
-                MatrixFillerComponent.append(parS)
+                constituentComponent.append(parS)
             # FillerComponent/ParticleAspectRatio
         if match(sheet.cell_value(row, 0), 'Aspect ratio'):
             aspR = collections.OrderedDict()
             myRow = sheet.row_values(row) # save the list of row_values
             aspR = addKVU('ParticleAspectRatio', myRow[1], myRow[2], '', '', '', '', '', aspR, jobDir, myXSDtree)
             if len(aspR) > 0:
-                MatrixFillerComponent.append(aspR)
+                constituentComponent.append(aspR)
             # FillerComponent/NonSphericalShape/Length
         if match(sheet.cell_value(row, 0), 'Non spherical shape-length'):
             myRow = sheet.row_values(row) # save the list of row_values
@@ -3402,23 +3400,47 @@ def sheetMatPropFEA(sheet, DATA, myXSDtree, jobDir):
             numI = addKVU('NumberOfInterphase', myRow[1], myRow[2], '', '', '', '', '', numI, jobDir, myXSDtree)
             if len(numI) > 0:
                 temp_list.append(numI)
+        # Interphase
+            # InterphaseComponent/InterphaseThickness
+        if match(sheet.cell_value(row, 0), 'Interphase thickness'):
+            intT = collections.OrderedDict()
+            myRow = sheet.row_values(row) # save the list of row_values
+            intT = addKVU('InterphaseThickness', '', myRow[2], myRow[3], '', '', '', '', intT, jobDir, myXSDtree)
+            if len(intT) > 0:
+                constituentComponent.append(intT)
+        # TODO Matrix - Properties
+        if matchList(sheet.cell_value(row, 0), headers_PROP) == 'Properties - Mechanical':
+            # use row+1 since the current row will trigger early stopping
+            sheetPropMech(sheet, constituentProp, myXSDtree, jobDir, start_row=row+1, stop_sign=prop_stop_signs)
+
+    # headers_PROP = {'Properties - Mechanical', 'Properties - Viscoelastic',
+    #     'Properties - Electrical', 'Properties - Rheological', 'Properties - Thermal'}
 
     # END OF THE LOOP
     # special case NonSphericalShape, need to save the list from
-    # bottom up into MatrixFillerComponent
+    # bottom up into constituentComponent
     if len(nonSpher) > 0:
-        MatrixFillerComponent.append({'NonSphericalShape': nonSpher})
+        constituentComponent.append({'NonSphericalShape': nonSpher})
         # initialize
         nonSpher = collections.OrderedDict() # initialize
-    # special case MatrixFillerComponent, need to save the list from bottom up
+    # special case constituentProp, need to save the list from bottom up
     # into temp
-    if len(MatrixFillerComponent) > 0:
-        componentType = 'MatrixComponent' if prevTemp == 'Matrix' else 'FillerComponent'
-        # sort MatrixFillerComponent
-        MatrixFillerComponent = sortSequence(MatrixFillerComponent, componentType, myXSDtree)
-        temp.append({componentType: MatrixFillerComponent})
+    if len(constituentProp) > 0:
+        componentType = f'{prevTemp}Properties'
+        # sort constituentComponent
+        constituentProp = sortSequence(constituentProp, componentType, myXSDtree)
+        constituentComponent.append({componentType: constituentProp})
         # initialize
-        MatrixFillerComponent = []
+        constituentProp = []
+    # special case constituentComponent, need to save the list from bottom up
+    # into temp
+    if len(constituentComponent) > 0:
+        componentType = f'{prevTemp}Component'
+        # sort constituentComponent
+        constituentComponent = sortSequence(constituentComponent, componentType, myXSDtree)
+        temp.append({componentType: constituentComponent})
+        # initialize
+        constituentComponent = []
     # special case FillerComposition
     if len(FillerComposition) > 0:
         # sort FillerComposition
@@ -3426,14 +3448,6 @@ def sheetMatPropFEA(sheet, DATA, myXSDtree, jobDir):
         temp.append({'FillerComposition': FillerComposition})
         # reset
         FillerComposition = []
-    # special case InterphaseComponent, need to save the list from bottom up
-    # into temp
-    if len(InterphaseComponent) > 0:
-        # sort InterphaseComponent
-        InterphaseComponent = sortSequence(InterphaseComponent, 'InterphaseComponent', myXSDtree)
-        temp.append({'InterphaseComponent': InterphaseComponent})
-        # reset
-        InterphaseComponent = []
     # don't forget about the last temp
     # save temp
     if len(temp) > 0: # update temp if it's not empty
