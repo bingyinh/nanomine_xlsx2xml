@@ -185,6 +185,7 @@ def sortSequence(myList, myClassName, myXSDtree):
              'MatrixComponent':'PolymerType',# MatrixComponent;'MatrixComponent'
              'Filler':'FillerType',# temp;prevTemp
              'FillerComponent':'ParticleType',# FillerComponent;'FillerComponent'
+             'FillerComposition':'PolymerCompositionTypeWithSource',# FillerComposition;'FillerComposition'
              'Particle Surface Treatment (PST)':'ParticleSurfaceModificationType',# PST;'Particle Surface Treatment (PST)'
              'PROCESSING':'ProcessingCategoryType',# Process_list;'PROCESSING'
              'Additive':'ProcessingParameterAdditive',# temp;prevTemp
@@ -263,6 +264,7 @@ def sortSequence(myList, myClassName, myXSDtree):
              'FEALoadingConditions':'FEALoadingConditionsGeneralType',
              'FEAMicrostructureGeneration':'FEAMicrostructureGenerationType',
              'RVEShape':'RVEShapeType',
+             'InterphaseComponent':'InterphaseComponentType',
              } # {myClassName:xsdComplexTypeName}
     myTypeName = CTmap[myClassName] #example: MatrixType
     myTypeTree = myXSDtree.findall(".//*[@name='" + myTypeName + "']")
@@ -3245,6 +3247,206 @@ def sheetSimulationFEA(sheet, DATA_SIMU, myXSDtree, jobDir):
         DATA_SIMU.append({'FiniteElementAnalysis': temp_list})
     return DATA_SIMU
 
+# Sheet 2. Material Properties - FEA
+def sheetMatPropFEA(sheet, DATA, myXSDtree, jobDir):
+    headers = {'Matrix': 'Matrix', 'Filler': 'Filler', 
+        'Number of interphase':'NumberOfInterphase', 'Interphase': 'Interphase'}
+    MatrixFillerComponent = [] # a list for MATERIALS/Matrix/MatrixComponent and MATERIALS/Filler/FillerComponent
+    InterphaseComponent = [] # a list for MATERIALS/Interphase/InterphaseComponent
+    FillerComposition = [] # a list for MATERIALS/Filler/FillerComposition
+    nonSpher = collections.OrderedDict() # a list for MATERIALS/Filler/FillerComponent/NonSphericalShape
+    temp_list = [] # the highest level list for MATERIALS
+    temp = [] # always save temp if not empty when we find a match in headers
+    prevTemp = '' # save the previous cleanTemp
+    mfvf = None # a flag for mass fraction and volume fraction
+    for row in range(sheet.nrows):
+        cleanTemp = matchList(sheet.cell_value(row, 0), headers.keys())
+        if cleanTemp:
+            if len(prevTemp) == 0: # initialize prevTemp
+                prevTemp = cleanTemp
+            # special case NonSphericalShape, need to save the dict from bottom up
+            # into FillerComponent
+            if len(nonSpher) > 0:
+                FillerComponent.append({'NonSphericalShape': nonSpher})
+                # initialize
+                nonSpher = collections.OrderedDict() # initialize
+            # special case MatrixFillerComponent, need to save the list from bottom up
+            # into temp
+            if len(MatrixFillerComponent) > 0:
+                componentType = 'MatrixComponent' if prevTemp == 'Matrix' else 'FillerComponent'
+                # sort MatrixFillerComponent
+                MatrixFillerComponent = sortSequence(MatrixFillerComponent, componentType, myXSDtree)
+                temp.append({componentType: MatrixFillerComponent})
+                # initialize
+                MatrixFillerComponent = []
+            # special case FillerComposition
+            if len(FillerComposition) > 0:
+                # sort FillerComposition
+                FillerComposition = sortSequence(FillerComposition, 'FillerComposition', myXSDtree)
+                temp.append({'FillerComposition': FillerComposition})
+                # reset
+                FillerComposition = []
+            # special case InterphaseComponent, need to save the list from bottom up
+            # into temp
+            if len(InterphaseComponent) > 0:
+                # sort InterphaseComponent
+                InterphaseComponent = sortSequence(InterphaseComponent, 'InterphaseComponent', myXSDtree)
+                temp.append({'InterphaseComponent': InterphaseComponent})
+                # reset
+                InterphaseComponent = []
+            # save temp
+            if len(temp) > 0: # update temp if it's not empty
+                # sort temp
+                temp = sortSequence(temp, prevTemp, myXSDtree)
+                temp_list.append({headers[prevTemp]: temp})
+                temp = []
+            prevTemp = cleanTemp # update prevTemp
+        # Matrix
+            # MatrixComponent/ChemicalName
+        if match(sheet.cell_value(row, 0), 'Chemical name'):
+            MatrixFillerComponent = insert('ChemicalName', sheet.cell_value(row, 1), MatrixFillerComponent)
+            # MatrixComponent/Abbreviation
+        if match(sheet.cell_value(row, 0), 'Abbreviation'):
+            MatrixFillerComponent = insert('Abbreviation', sheet.cell_value(row, 1), MatrixFillerComponent)
+            # MatrixComponent/PlasticType
+        if match(sheet.cell_value(row, 0), 'Polymer plastic type'):
+            MatrixFillerComponent = insert('PlasticType', sheet.cell_value(row, 1), MatrixFillerComponent)
+            # MatrixComponent/PolymerType
+        if match(sheet.cell_value(row, 0), 'Polymer type'):
+            MatrixFillerComponent = insert('PolymerType', sheet.cell_value(row, 1), MatrixFillerComponent)
+            # MatrixComponent/Density
+        if match(sheet.cell_value(row, 0), 'Density') and prevTemp == 'Matrix':
+            denS = collections.OrderedDict()
+            myRow = sheet.row_values(row) # save the list of row_values
+            denS = addKVU('Density', myRow[1], myRow[2], myRow[3], '', '', '', '', denS, jobDir, myXSDtree)
+            if len(denS) > 0:
+                MatrixFillerComponent.append(denS)
+        # TODO Matrix - Properties
+        # Filler
+            # FillerComponent/ChemicalName
+        if match(sheet.cell_value(row, 0), 'Filler chemical name/Filler name'):
+            MatrixFillerComponent = insert('ChemicalName', sheet.cell_value(row, 1), MatrixFillerComponent)
+            # FillerComponent/Abbreviation
+        if match(sheet.cell_value(row, 0), 'Filler abbreviation'):
+            MatrixFillerComponent = insert('Abbreviation', sheet.cell_value(row, 1), MatrixFillerComponent)
+            # FillerComponent/Density
+        if match(sheet.cell_value(row, 0), 'Density') and prevTemp == 'Filler':
+            denS = collections.OrderedDict()
+            myRow = sheet.row_values(row) # save the list of row_values
+            denS = addKVU('Density', myRow[1], myRow[2], myRow[3], '', '', '', '', denS, jobDir, myXSDtree)
+            if len(denS) > 0:
+                MatrixFillerComponent.append(denS)
+            # FillerComponent/SphericalParticleDiameter
+        if match(sheet.cell_value(row, 0), 'Particle diameter'):
+            parS = collections.OrderedDict()
+            myRow = sheet.row_values(row) # save the list of row_values
+            parS = addKVSU('SphericalParticleDiameter', myRow[1], myRow[2], myRow[3], myRow[4], myRow[5], myRow[6], '', '', parS, jobDir, myXSDtree)
+            if len(parS) > 0:
+                MatrixFillerComponent.append(parS)
+            # FillerComponent/ParticleAspectRatio
+        if match(sheet.cell_value(row, 0), 'Aspect ratio'):
+            aspR = collections.OrderedDict()
+            myRow = sheet.row_values(row) # save the list of row_values
+            aspR = addKVU('ParticleAspectRatio', myRow[1], myRow[2], '', '', '', '', '', aspR, jobDir, myXSDtree)
+            if len(aspR) > 0:
+                MatrixFillerComponent.append(aspR)
+            # FillerComponent/NonSphericalShape/Length
+        if match(sheet.cell_value(row, 0), 'Non spherical shape-length'):
+            myRow = sheet.row_values(row) # save the list of row_values
+            nonSpher = addKVU('Length', myRow[1],
+                              myRow[2], myRow[3], '', '', '', '', nonSpher, jobDir, myXSDtree)
+            # FillerComponent/NonSphericalShape/Width
+        if match(sheet.cell_value(row, 0), 'Non spherical shape-width'):
+            myRow = sheet.row_values(row) # save the list of row_values
+            nonSpher = addKVU('Width', myRow[1],
+                              myRow[2], myRow[3], '', '', '', '', nonSpher, jobDir, myXSDtree)
+            # FillerComponent/NonSphericalShape/Depth
+        if match(sheet.cell_value(row, 0), 'Non spherical shape-depth'):
+            myRow = sheet.row_values(row) # save the list of row_values
+            nonSpher = addKVU('Depth', myRow[1],
+                              myRow[2], myRow[3], '', '', '', '', nonSpher, jobDir, myXSDtree)
+            # FillerComposition/Fraction
+        if match(sheet.cell_value(row, 0), 'Total fraction'):
+            if type(sheet.cell_value(row, 2)) == float or len(sheet.cell_value(row, 2)) > 0:
+                if match(sheet.cell_value(row, 1), 'mass'):
+                    mfvf = 'mass'
+                elif match(sheet.cell_value(row, 1), 'volume'):
+                    mfvf = 'volume'
+                if mfvf:
+                    FillerComposition.append({'Fraction':
+                        {mfvf: collections.OrderedDict([('value',sheet.cell_value(row, 2)),
+                                                        ('source','reported')])}})
+            # FillerComposition/NonAgglomerateFraction
+        if match(sheet.cell_value(row, 0), 'Non-agglomerate fraction'):
+            if type(sheet.cell_value(row, 2)) == float or len(sheet.cell_value(row, 2)) > 0:
+                if mfvf:
+                    FillerComposition.append({'NonAgglomerateFraction':
+                        {mfvf: collections.OrderedDict([('value',sheet.cell_value(row, 2)),
+                                                        ('source','reported')])}})
+            # FillerComponent/NumberOfAgglomeration
+        if match(sheet.cell_value(row, 0), 'Number of agglomeration'):
+            FillerComposition = insert('NumberOfAgglomeration', sheet.cell_value(row, 2), FillerComposition)
+            # FillerComposition/AgglomerateFraction
+        if match(sheet.cell_value(row, 0), 'Agglomerate fraction'):
+            if type(sheet.cell_value(row, 2)) == float or len(sheet.cell_value(row, 2)) > 0:
+                if mfvf:
+                    FillerComposition.append({'AgglomerateFraction':
+                        {mfvf: collections.OrderedDict([('value',sheet.cell_value(row, 2)),
+                                                        ('source','reported')])}})
+
+        # Number of interphase
+        # special case, add directly into temp_list instead of temp
+        if match(sheet.cell_value(row, 0), 'Number of interphase'):
+            numI = collections.OrderedDict()
+            myRow = sheet.row_values(row) # save the list of row_values
+            numI = addKVU('NumberOfInterphase', myRow[1], myRow[2], '', '', '', '', '', numI, jobDir, myXSDtree)
+            if len(numI) > 0:
+                temp_list.append(numI)
+
+    # END OF THE LOOP
+    # special case NonSphericalShape, need to save the list from
+    # bottom up into MatrixFillerComponent
+    if len(nonSpher) > 0:
+        MatrixFillerComponent.append({'NonSphericalShape': nonSpher})
+        # initialize
+        nonSpher = collections.OrderedDict() # initialize
+    # special case MatrixFillerComponent, need to save the list from bottom up
+    # into temp
+    if len(MatrixFillerComponent) > 0:
+        componentType = 'MatrixComponent' if prevTemp == 'Matrix' else 'FillerComponent'
+        # sort MatrixFillerComponent
+        MatrixFillerComponent = sortSequence(MatrixFillerComponent, componentType, myXSDtree)
+        temp.append({componentType: MatrixFillerComponent})
+        # initialize
+        MatrixFillerComponent = []
+    # special case FillerComposition
+    if len(FillerComposition) > 0:
+        # sort FillerComposition
+        FillerComposition = sortSequence(FillerComposition, 'FillerComposition', myXSDtree)
+        temp.append({'FillerComposition': FillerComposition})
+        # reset
+        FillerComposition = []
+    # special case InterphaseComponent, need to save the list from bottom up
+    # into temp
+    if len(InterphaseComponent) > 0:
+        # sort InterphaseComponent
+        InterphaseComponent = sortSequence(InterphaseComponent, 'InterphaseComponent', myXSDtree)
+        temp.append({'InterphaseComponent': InterphaseComponent})
+        # reset
+        InterphaseComponent = []
+    # don't forget about the last temp
+    # save temp
+    if len(temp) > 0: # update temp if it's not empty
+        # sort temp
+        temp == sortSequence(temp, prevTemp, myXSDtree)
+        temp_list.append({headers[prevTemp]: temp})
+        temp = []
+    if len(temp_list) > 0:
+        # sort temp_list
+        temp_list = sortSequence(temp_list, 'MATERIALS', myXSDtree)
+        DATA.append({'MATERIALS': temp_list})
+    return DATA
+
 ## main
 def compiler(jobDir, code_srcDir, xsdDir, templateName):
     ## Global variable myXSDtree
@@ -3291,7 +3493,11 @@ def compiler(jobDir, code_srcDir, xsdDir, templateName):
             DATA = sheetMicrostructure(sheet, DATA, myXSDtree, jobDir)
         # new worksheets for computational data (FEA, MD)
         elif sheet.row_values(0)[0].strip().lower().startswith("simulation"):
+            # simulation sheets
             DATA_SIMU = whichSimu(sheet, DATA_SIMU, myXSDtree, jobDir)
+        elif sheet.row_values(0)[0].strip().lower() == "material properties - fea":
+            # material properties - fea sheet
+            DATA = sheetMatPropFEA(sheet, DATA, myXSDtree, jobDir)
 
     if len(DATA_PROP) > 0:
         # sort DATA_PROP
