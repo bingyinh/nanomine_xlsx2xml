@@ -56,17 +56,18 @@ def read_excel_profile(filename, jobDir):
         for i in range(start_row, end_row):
             profile_data.append({'row':({'column':data_content.row_values(i)[0]},
                                         {'column':data_content.row_values(i)[1]})})
-    elif os.path.splitext(filename)[-1] == '.csv':
+    elif os.path.splitext(filename)[-1] in {'.csv','.tsv'}:
+        delimiter = '\t' if os.path.splitext(filename)[-1] == '.tsv' else ','
         # open and read data
         with open(jobDir + '/' + filename, newline='') as data_file:
-            data_reader = csv.reader(data_file)
+            data_reader = csv.reader(data_file, delimiter=delimiter)
             first = True
             profile_data = []
             for row in data_reader:
                 if len(row) != 2:
                     # write the message in ./error_message.txt
                     with open(jobDir + '/error_message.txt', 'a') as fid:
-                        fid.write('[File Error] csv file "%s" has a row that is not occupied by exactly the first and the second column.\n' % (filename))
+                        fid.write('[File Error] data file "%s" has a row that is not occupied by exactly the first and the second column.\n' % (filename))
                         return ''
                 if first:
                     header = [{'column': row[0]}, {'column': row[1]}]
@@ -81,6 +82,94 @@ def read_excel_profile(filename, jobDir):
             return ''
     # return the package
     return {'headers': header, 'rows': profile_data}
+
+# a helper method to extract master curve data (3 columns) from the datafile
+# the function will return 2 dicts for (col0, col1) pair and (col0, col2) pair,
+# which usually are (freq, E') and (freq, E'')
+# this method merges read_excel_profile and add_KVU for the special case master curve
+def read_master_curve(description, filename, jobDir, myXSDtree):
+    # read master curve and prepare the data
+    if len(str(filename).strip()) == 0:
+       return ''
+    # confirm whether the file exists
+    if not os.path.exists(jobDir + '/' + filename):
+        # write the message in ./error_message.txt
+        with open(jobDir + '/error_message.txt', 'a') as fid:
+            fid.write('[File Error] Missing file! Please include "%s" in your uploads.\n' % (filename))
+            return ''
+    if os.path.splitext(filename)[-1] == '.xlsx':
+        # open and read data
+        data_file = xlrd.open_workbook(jobDir + '/' + filename)
+        data_names = data_file.sheet_names()
+        data_content = data_file.sheet_by_name(data_names[0])
+        # read data from excel file
+        header0 = [{'column': data_content.row_values(0)[0]},
+                   {'column': data_content.row_values(0)[1]}]
+        header1 = [{'column': data_content.row_values(0)[0]},
+                   {'column': data_content.row_values(0)[2]}]
+        start_row = 1
+        end_row = data_content.nrows
+        profile_data0 = []
+        profile_data1 = []
+        for i in range(start_row, end_row):
+            profile_data0.append({'row':({'column':data_content.row_values(i)[0]},
+                                         {'column':data_content.row_values(i)[1]})})
+            profile_data1.append({'row':({'column':data_content.row_values(i)[0]},
+                                         {'column':data_content.row_values(i)[2]})})
+    elif os.path.splitext(filename)[-1] in {'.csv','.tsv'}:
+        delimiter = '\t' if os.path.splitext(filename)[-1] == '.tsv' else ','
+        # open and read data
+        with open(jobDir + '/' + filename, newline='') as data_file:
+            data_reader = csv.reader(data_file, delimiter=delimiter)
+            first = True
+            profile_data0 = []
+            profile_data1 = []
+            for row in data_reader:
+                if len(row) != 3:
+                    # write the message in ./error_message.txt
+                    with open(jobDir + '/error_message.txt', 'a') as fid:
+                        fid.write('[File Error] data file "%s" has a row that is not occupied by exactly 3 columns.\n' % (filename))
+                        return ''
+                if first:
+                    header0 = [{'column': row[0]}, {'column': row[1]}]
+                    header1 = [{'column': row[0]}, {'column': row[2]}]
+                    first = False
+                else:
+                    profile_data0.append({'row':({'column':row[0]},
+                                                 {'column':row[1]})})
+                    profile_data1.append({'row':({'column':row[0]},
+                                                 {'column':row[2]})})
+    else:
+        # write the message in ./error_message.txt
+        with open(jobDir + '/error_message.txt', 'a') as fid:
+            fid.write('[File Error] File extension of %s is not supported.\n' % (filename))
+            return ''
+    # return the package
+    extracted = ({'headers': header0, 'rows': profile_data0},
+                 {'headers': header1, 'rows': profile_data1})
+    # finish the extraction part
+    output = [{},{}]
+    for d,data_dict in enumerate(extracted):
+        small_dict = collections.OrderedDict()
+        small_list_data = []
+        small_dict_axis = collections.OrderedDict()
+        if hasLen(description):
+            small_dict['description'] = description
+        small_list_data.append({'description': 'extracted from master curve'})
+        small_list_data.append({'data': data_dict})
+        if len(small_list_data) > 0:
+            # read the header and extract the axis labels and units
+            # 'data' dict always the last in small_list_data
+            small_dict_axis = axisInfo(small_list_data[-1]['data'])
+            if len(small_dict_axis) > 0:
+                small_list_data.append({'AxisLabel': small_dict_axis})
+            # sort small_list_data
+            small_list_data = sortSequence(small_list_data, 'Distribution', myXSDtree)
+            small_dict['data'] = small_list_data
+        # store small_dict into dict_in
+        if len(small_dict) > 0:
+            output[d]['DynamicPropertyProfile'] = small_dict
+    return output
 
 # a helper method to standardize the axis label and axis unit from headers
 # handle left for further development (!!!!!!!!) input header is a string
@@ -1837,8 +1926,8 @@ def sheetPropVisc(sheet, DATA_PROP, myXSDtree, jobDir, start_row=0, stop_sign=se
                    'Measurement mode': 'MeasurementMode',
                    'Measurement method': 'MeasurementMethod',
                    'DMA mode': 'DMA_mode',
-                   'DMA Datafile.xlsx': 'DynamicPropertyProfile',
-                   'Master Curve.xlsx': 'MasterCurve'}
+                   'DMA Datafile': 'DynamicPropertyProfile',
+                   'Master Curve': 'MasterCurve'}
     headers_creep = {'Compressive': 'Compressive',
                      'Tensile': 'Tensile',
                      'Flexural': 'Flexural'}
@@ -1944,21 +2033,12 @@ def sheetPropVisc(sheet, DATA_PROP, myXSDtree, jobDir, start_row=0, stop_sign=se
                 DMA_file_num += 1 # add 1 count
         # DynamicProperties/MasterCurve
         if match(sheet.cell_value(row, 0), 'Master Curve'):
-            masC = collections.OrderedDict()
-            masC_list = collections.OrderedDict()
             myRow = sheet.row_values(row) # save the list of row_values
-            if hasLen(myRow[1]):
-                masC['description'] = myRow[1]
             if type(myRow[2]) == str and len(myRow[2]) > 0:
-                data = read_excel_profile(myRow[2], jobDir)
-                small_dict_axis = axisInfo(data)
-                if len(small_dict_axis) > 0:
-                    masC['AxisLabel'] = small_dict_axis
-                if len(data) > 0:
-                    masC['data'] = data
-            if len(masC) > 0:
-                masC_list['MasterCurve'] = masC
-                temp.append(masC_list)
+                masC = read_master_curve(myRow[1], myRow[2], jobDir, myXSDtree)
+            for dynP in masC:
+                temp.append(dynP)
+                DMA_file_num += 1 # add 1 count
         # CompressiveCreepRuptureStrength
         if match(sheet.cell_value(row, 0), 'Compressive creep rupture strength'):
             comS = collections.OrderedDict()
@@ -2089,6 +2169,39 @@ def sheetPropVisc(sheet, DATA_PROP, myXSDtree, jobDir, start_row=0, stop_sign=se
             rigB = addKVU('RightBroadeningFactor', myRow[1], myRow[2], '', '', '', '', '', rigB, jobDir, myXSDtree)
             if len(rigB) > 0:
                 temp.append(rigB)
+        # DynamicProperties/DynamicPropertyProfile (if we have multiple entries, copy all other fields in DynamicProperties)
+        if match(sheet.cell_value(row, 0), 'Storage modulus'):
+            dynP = collections.OrderedDict()
+            myRow = sheet.row_values(row) # save the list of row_values
+            while len(myRow) < 7:
+                myRow.append('') # prevent IndexError
+            dynP = addKVU('DynamicPropertyProfile',
+                          myRow[1], myRow[2], '', '', '', 'Storage modulus', myRow[4], dynP, jobDir, myXSDtree)
+            if len(dynP) > 0:
+                temp.append(dynP)
+                DMA_file_num += 1 # add 1 count
+        # DynamicProperties/DynamicPropertyProfile (if we have multiple entries, copy all other fields in DynamicProperties)
+        if match(sheet.cell_value(row, 0), 'Loss modulus'):
+            dynP = collections.OrderedDict()
+            myRow = sheet.row_values(row) # save the list of row_values
+            while len(myRow) < 7:
+                myRow.append('') # prevent IndexError
+            dynP = addKVU('DynamicPropertyProfile',
+                          myRow[1], myRow[2], '', '', '', 'Loss modulus', myRow[4], dynP, jobDir, myXSDtree)
+            if len(dynP) > 0:
+                temp.append(dynP)
+                DMA_file_num += 1 # add 1 count
+        # DynamicProperties/DynamicPropertyProfile (if we have multiple entries, copy all other fields in DynamicProperties)
+        if match(sheet.cell_value(row, 0), 'Loss tangent'):
+            dynP = collections.OrderedDict()
+            myRow = sheet.row_values(row) # save the list of row_values
+            while len(myRow) < 7:
+                myRow.append('') # prevent IndexError
+            dynP = addKVU('DynamicPropertyProfile',
+                          myRow[1], myRow[2], '', '', '', 'Loss tangent', myRow[4], dynP, jobDir, myXSDtree)
+            if len(dynP) > 0:
+                temp.append(dynP)
+                DMA_file_num += 1 # add 1 count
 
     # END OF THE LOOP
     # save DMA_Test if it's not empty and user has selected DMA_mode
@@ -2828,7 +2941,7 @@ def sheetPropRheo(sheet, DATA_PROP, myXSDtree, jobDir, start_row=0, stop_sign=se
             if len(freQ) > 0:
                 DMA_Test.append(freQ)
         # RheologicalComplexModulus/RheologicalStorageModulus
-        if match(sheet.cell_value(row, 0), "Rheological G' Datafile.xlsx"):
+        if match(sheet.cell_value(row, 0), "Rheological G' Datafile"):
             rheS = collections.OrderedDict()
             myRow = sheet.row_values(row) # save the list of row_values
             while len(myRow) < 7:
@@ -2838,7 +2951,7 @@ def sheetPropRheo(sheet, DATA_PROP, myXSDtree, jobDir, start_row=0, stop_sign=se
             if len(rheS) > 0:
                 temp.append(rheS)
         # RheologicalComplexModulus/RheologicalLossModulus
-        if match(sheet.cell_value(row, 0), "Rheological G'' Datafile.xlsx"):
+        if match(sheet.cell_value(row, 0), "Rheological G'' Datafile"):
             rheL = collections.OrderedDict()
             myRow = sheet.row_values(row) # save the list of row_values
             while len(myRow) < 7:
@@ -2848,7 +2961,7 @@ def sheetPropRheo(sheet, DATA_PROP, myXSDtree, jobDir, start_row=0, stop_sign=se
             if len(rheL) > 0:
                 temp.append(rheL)
         # RheologicalComplexModulus/RheologicalLossTangent
-        if match(sheet.cell_value(row, 0), 'Rheological tan_delta Datafile.xlsx'):
+        if match(sheet.cell_value(row, 0), 'Rheological tan_delta Datafile'):
             rheT = collections.OrderedDict()
             myRow = sheet.row_values(row) # save the list of row_values
             while len(myRow) < 7:
@@ -2858,7 +2971,7 @@ def sheetPropRheo(sheet, DATA_PROP, myXSDtree, jobDir, start_row=0, stop_sign=se
             if len(rheT) > 0:
                 temp.append(rheT)
         # RheologicalComplexModulus/RheologicalMasterCurve
-        if match(sheet.cell_value(row, 0), 'Master Curve.xlsx'):
+        if match(sheet.cell_value(row, 0), 'Master Curve'):
             masC = collections.OrderedDict()
             masC_list = collections.OrderedDict()
             myRow = sheet.row_values(row) # save the list of row_values
