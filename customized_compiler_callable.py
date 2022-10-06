@@ -3349,7 +3349,7 @@ def sheetSimulationFEA(sheet, DATA_SIMU, myXSDtree, jobDir):
                         temp = insert('MicrostructureDataFile', {'File':msDir}, temp)
         # FEAMicrostructureGeneration/RVEScale
         if match(sheet.cell_value(row, 0), 'Scale - nm per RVE length unit'):
-            temp = insert('RVEScale', sheet.cell_value(row, 1), temp)
+            temp = insert('RVEScale', sheet.cell_value(row, 2), temp)
         # FEAMicrostructureGeneration/RVEShape/RVEWidth
         if match(sheet.cell_value(row, 0), 'Width'):
             widt = collections.OrderedDict()
